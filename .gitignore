@@ -1,0 +1,55 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+coverage-report/
+*.coverage
+*.coveragexml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / local configuration
+.env
+.env.*
+!.env.example
+
+# Local application settings / secrets
+appsettings.Development.json
+appsettings.Local.json
+
+# User-specific files
+*.rsuser
+
+# Generated files
+Generated/
