@@ -1,0 +1,16 @@
+dotnet clean SwiftRide.slnx
+
+dotnet restore SwiftRide.slnx
+
+set ASPNETCORE_ENVIRONMENT=Development
+
+dotnet ef database update --project src/TripService/TripService.Infrastructure/TripService.Infrastructure.csproj --startup-project src/TripService/TripService.Api/TripService.Api.csproj
+
+for TripService 
+dotnet run --project src/TripService/TripService.Api/TripService.Api.csproj
+
+for MatchingService
+dotnet run --project src/MatchingService/MatchingService.Api/MatchingService.Api.csproj
+
+for PaymentService
+dotnet run --project src/PaymentService/PaymentService.Api/PaymentService.Api.csproj
