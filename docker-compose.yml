@@ -1,0 +1,37 @@
+services:
+  mongodb:
+    image: mongo:8
+    container_name: swiftride-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: SwiftRideMatchDB
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - swiftride-network
+
+  matching-service:
+    build:
+      context: ./src/MatchingService
+      dockerfile: Dockerfile
+    container_name: swiftride-matching
+    restart: unless-stopped
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MongoDb__ConnectionString: mongodb://mongodb:27017
+      MongoDb__DatabaseName: SwiftRideMatchDB
+    depends_on:
+      - mongodb
+    networks:
+      - swiftride-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  swiftride-network:
+    driver: bridge
