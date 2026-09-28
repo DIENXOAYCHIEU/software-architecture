@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  trip_service:
+    build:
+      context: .
+      dockerfile: src/TripService/TripService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      ConnectionStrings__TripServiceDb: ${TRIP_DB_CONNECTION}
+    container_name: trip_service
+    ports:
+      - "8081:8081"
+    networks:
+      - swiftride-network
+
+  payment_service:
+    build:
+      context: .
+      dockerfile: src/PaymentService/PaymentService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8083
+      ConnectionStrings__PaymentServiceDb: ${PAYMENT_DB_CONNECTION}
+    container_name: payment_service
+    ports:
+      - "8083:8083"
+    networks:
+      - swiftride-network
+
+networks:
+  swiftride-network:
+    driver: bridge
