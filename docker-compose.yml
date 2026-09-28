@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  paydb:
+    image: mysql:8.4
+    container_name: swiftride-paydb
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: paydb
+    ports:
+      - "3307:3306"          # Mở cổng 3307 ra máy thật để tránh trùng với MySQL khác (3306)
+    volumes:
+      - paydb-data:/var/lib/mysql
+    networks:
+      - swiftride-network
+
+networks:
+  swiftride-network:
+    driver: bridge
+
+volumes:
+  paydb-data:
