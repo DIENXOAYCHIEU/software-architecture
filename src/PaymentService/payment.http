@@ -1,0 +1,52 @@
+### Biến dùng chung (VS Code REST Client / Visual Studio .http). Đổi port theo launch của bạn.
+@host = http://localhost:5000
+@tripId = 11111111-1111-1111-1111-111111111111
+@riderId = 22222222-2222-2222-2222-222222222222
+
+### 0. Health
+GET {{host}}/health
+
+### 1. Tạo thanh toán (thành công)
+POST {{host}}/payments
+Content-Type: application/json
+Idempotency-Key: pay-trip-001
+
+{ "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Card", "paymentToken": "tok_visa_ok" }
+
+### 2. Gửi LẠI y hệt (cùng Idempotency-Key) => 200, cùng Id, không trừ tiền lần 2
+POST {{host}}/payments
+Content-Type: application/json
+Idempotency-Key: pay-trip-001
+
+{ "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Card", "paymentToken": "tok_visa_ok" }
+
+### 3. Trả tiền lần nữa cho cùng chuyến bằng key khác => 409
+POST {{host}}/payments
+Content-Type: application/json
+Idempotency-Key: pay-trip-001-again
+
+{ "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Wallet", "paymentToken": "tok_wallet" }
+
+### 4. Thanh toán thất bại (token tok_fail...) => status Failed
+POST {{host}}/payments
+Content-Type: application/json
+Idempotency-Key: pay-trip-002
+
+{ "tripId": "33333333-3333-3333-3333-333333333333", "riderId": "{{riderId}}", "amount": 50000, "method": "Card", "paymentToken": "tok_fail_declined" }
+
+### 5. Thiếu Idempotency-Key => 400
+POST {{host}}/payments
+Content-Type: application/json
+
+{ "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 1000, "method": "Card", "paymentToken": "tok_x" }
+
+### 6. Xem theo chuyến
+GET {{host}}/payments/by-trip/{{tripId}}
+
+### 7. Xem chi tiết / sổ cái (thay {id} bằng Id nhận được ở bước 1)
+GET {{host}}/payments/{id}
+###
+GET {{host}}/payments/{id}/ledger
+
+### 8. Hoàn tiền => Refunded, ledger thêm 2 bút toán đảo
+POST {{host}}/payments/{id}/refund

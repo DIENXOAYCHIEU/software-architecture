@@ -1,11 +1,5 @@
 <Solution>
   <Folder Name="/src/" />
-  <Folder Name="/src/PaymentService/">
-    <Project Path="src/PaymentService/PaymentService.Api/PaymentService.Api.csproj" />
-    <Project Path="src/PaymentService/PaymentService.Application/PaymentService.Application.csproj" />
-    <Project Path="src/PaymentService/PaymentService.Domain/PaymentService.Domain.csproj" />
-    <Project Path="src/PaymentService/PaymentService.Infrastructure/PaymentService.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/src/TripService/">
     <Project Path="src/TripService/TripService.Api/TripService.Api.csproj" />
     <Project Path="src/TripService/TripService.Application/TripService.Application.csproj" />
