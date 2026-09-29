@@ -10,7 +10,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration.GetConnectionString("PayDb")!);
+    .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")!);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
