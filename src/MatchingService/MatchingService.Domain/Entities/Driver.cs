@@ -66,4 +66,9 @@ public class Driver
             ?? throw new InvalidMatchingException(
                 "Driver location is required.");
     }
+
+    public void UpdateStatus(DriverStatus status)
+    {
+        Status = status;
+    }
 }

@@ -85,10 +85,10 @@ public class MatchingRequest
 
     public void MarkFailed()
     {
-        if (Status == MatchingStatus.Matched)
+        if (Status != MatchingStatus.Searching)
         {
             throw new InvalidMatchingException(
-                "A matched request cannot be marked as failed.");
+                "Only a searching request can be marked as failed.");
         }
 
         Status = MatchingStatus.Failed;
@@ -96,10 +96,10 @@ public class MatchingRequest
 
     public void Cancel()
     {
-        if (Status == MatchingStatus.Matched)
+        if (Status is not MatchingStatus.Pending and not MatchingStatus.Searching)
         {
             throw new InvalidMatchingException(
-                "A matched request cannot be cancelled.");
+                "Only a pending or searching request can be cancelled.");
         }
 
         Status = MatchingStatus.Cancelled;

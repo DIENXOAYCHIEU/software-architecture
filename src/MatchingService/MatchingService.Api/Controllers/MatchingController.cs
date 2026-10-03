@@ -9,11 +9,13 @@ namespace MatchingService.Api.Controllers;
 public class MatchingController : ControllerBase
 {
     private readonly IMatchingService _matchingService;
-
+    private readonly IPricingService _pricingService;
     public MatchingController(
-        IMatchingService matchingService)
+        IMatchingService matchingService,
+        IPricingService pricingService)
     {
         _matchingService = matchingService;
+        _pricingService = pricingService;
     }
 
     // =====================================================
@@ -233,4 +235,35 @@ public class MatchingController : ControllerBase
             });
         }
     }
+
+    [HttpPost("quote")]
+    public async Task<IActionResult> Quote(
+        [FromBody] PricingRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result =
+                await _pricingService.CalculateAsync(
+                    request,
+                    cancellationToken);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+    }
+
 }

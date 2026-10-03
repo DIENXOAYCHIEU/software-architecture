@@ -1,44 +1,44 @@
 using MatchingService.Application.Interfaces;
 using MatchingService.Domain.Entities;
-using MatchingService.Domain.Enums;
-using MongoDB.Driver;
+using MatchingService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace MatchingService.Infrastructure.Persistence.Repositories;
 
 public class DriverRepository : IDriverRepository
 {
-    private readonly IMongoCollection<Driver> _collection;
+    private readonly MatchingDbContext _context;
 
-    public DriverRepository(
-        MongoDbContext context)
+    public DriverRepository(MatchingDbContext context)
     {
-        _collection = context.Drivers;
+        _context = context;
     }
 
     public async Task AddAsync(
         Driver driver,
         CancellationToken cancellationToken = default)
     {
-        await _collection.InsertOneAsync(
+        await _context.Drivers.AddAsync(
             driver,
-            cancellationToken: cancellationToken);
+            cancellationToken);
+
     }
 
     public async Task<Driver?> GetByIdAsync(
         Guid driverId,
         CancellationToken cancellationToken = default)
     {
-        return await _collection
-            .Find(x => x.Id == driverId)
+        return await _context.Drivers
             .FirstOrDefaultAsync(
+                x => x.Id == driverId,
                 cancellationToken);
     }
 
     public async Task<List<Driver>> GetAvailableAsync(
         CancellationToken cancellationToken = default)
     {
-        return await _collection
-            .Find(x => x.Status == DriverStatus.Available)
+        return await _context.Drivers
+            .Where(x => x.Status == Domain.Enums.DriverStatus.Available)
             .ToListAsync(cancellationToken);
     }
 
@@ -46,9 +46,7 @@ public class DriverRepository : IDriverRepository
         Driver driver,
         CancellationToken cancellationToken = default)
     {
-        await _collection.ReplaceOneAsync(
-            x => x.Id == driver.Id,
-            driver,
-            cancellationToken: cancellationToken);
+        _context.Drivers.Update(driver);
+
     }
 }

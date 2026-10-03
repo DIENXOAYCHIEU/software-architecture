@@ -20,11 +20,12 @@ builder.Services.AddDbContext<TripDbContext>(options =>
     ));
 
 builder.Services.AddScoped<ITripRepository, TripRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); // Tells .NET how to create IUnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITripService, TripService.Application.Services.TripService>();
 
 var app = builder.Build();
 
+// app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();

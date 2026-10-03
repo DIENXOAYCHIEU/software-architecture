@@ -1,0 +1,22 @@
+// POST /api/trip
+// request
+{
+  "riderId": "7f3d7c1e-5b2a-4f8d-9c61-123456789abc",
+  "startLocation": {
+    "latitude": 10.8188,
+    "longitude": 106.6519,
+    "address": "Tan Son Nhat International Airport, Ho Chi Minh City"
+  },
+  "endLocation": {
+    "latitude": 10.7769,
+    "longitude": 106.7009,
+    "address": "Ben Thanh Market, Ho Chi Minh City"
+  }
+}
+
+// respone
+{
+    "id": "03550ab8-9c2a-4f2a-a8d9-3673b57c01a7",
+    "riderId": "7f3d7c1e-5b2a-4f8d-9c61-123456789abc",
+    "status": 0
+}

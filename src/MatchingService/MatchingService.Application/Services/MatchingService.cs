@@ -10,13 +10,16 @@ public class MatchingService : IMatchingService
 {
     private readonly IMatchingRepository _matchingRepository;
     private readonly IDriverRepository _driverRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public MatchingService(
         IMatchingRepository matchingRepository,
-        IDriverRepository driverRepository)
+        IDriverRepository driverRepository,
+        IUnitOfWork unitOfWork)
     {
         _matchingRepository = matchingRepository;
         _driverRepository = driverRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<CreatedMatchingResponse> CreateAsync(
@@ -51,6 +54,8 @@ public class MatchingService : IMatchingService
         await _matchingRepository.AddAsync(
             entity,
             cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CreatedMatchingResponse
         {
@@ -115,6 +120,8 @@ public class MatchingService : IMatchingService
                 matching,
                 cancellationToken);
 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
             return MapToResponse(matching);
         }
 
@@ -136,6 +143,8 @@ public class MatchingService : IMatchingService
             matching,
             cancellationToken);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return MapToResponse(matching);
     }
 
@@ -148,6 +157,11 @@ public class MatchingService : IMatchingService
             await GetEntityOrThrow(
                 id,
                 cancellationToken);
+
+        if (matching.Status == Domain.Enums.MatchingStatus.Pending)
+        {
+            matching.StartSearching();
+        }
 
         var driver =
             await _driverRepository.GetByIdAsync(
@@ -172,6 +186,8 @@ public class MatchingService : IMatchingService
             matching,
             cancellationToken);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return MapToResponse(matching);
     }
 
@@ -190,6 +206,8 @@ public class MatchingService : IMatchingService
             matching,
             cancellationToken);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return MapToResponse(matching);
     }
 
@@ -207,6 +225,8 @@ public class MatchingService : IMatchingService
         await _matchingRepository.UpdateAsync(
             matching,
             cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToResponse(matching);
     }
@@ -239,10 +259,8 @@ public class MatchingService : IMatchingService
         foreach (var driver in drivers)
         {
             var distance = CalculateDistanceKm(
-                pickup.Latitude,
-                pickup.Longitude,
-                driver.CurrentLocation.Latitude,
-                driver.CurrentLocation.Longitude);
+                pickup,
+                driver.CurrentLocation);
 
             if (distance < shortestDistance)
             {
@@ -257,21 +275,18 @@ public class MatchingService : IMatchingService
     }
 
     private static double CalculateDistanceKm(
-        double latitude1,
-        double longitude1,
-        double latitude2,
-        double longitude2)
+        Location startLocation, Location endLocation)
     {
         const double earthRadiusKm = 6371.0;
 
         var dLatitude = DegreesToRadians(
-            latitude2 - latitude1);
+            endLocation.Latitude - startLocation.Latitude);
 
         var dLongitude = DegreesToRadians(
-            longitude2 - longitude1);
+            endLocation.Longitude - startLocation.Longitude );
 
-        var lat1 = DegreesToRadians(latitude1);
-        var lat2 = DegreesToRadians(latitude2);
+        var lat1 = DegreesToRadians(startLocation.Latitude);
+        var lat2 = DegreesToRadians(endLocation.Latitude);
 
         var a =
             Math.Sin(dLatitude / 2) *

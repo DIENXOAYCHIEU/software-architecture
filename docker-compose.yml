@@ -1,61 +1,69 @@
+version: '3.8'
+
 services:
 
-  mongodb:
-    image: mongo:8
-    container_name: swiftride-mongodb
-    restart: unless-stopped
-
-    ports:
-      - "27017:27017"
-
-    environment:
-      MONGO_INITDB_DATABASE: SwiftRideMatchDB
-
-    volumes:
-      - mongodb_data:/data/db
-
-    networks:
-      - swiftride-network
-
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-
-  matching-service:
+  matching_service:
     build:
-      context: ./src/MatchingService
-      dockerfile: MatchingService.Api/Dockerfile
-
-    container_name: swiftride-matching
-    restart: unless-stopped
-
-    ports:
-      - "5001:8080"
+      context: .
+      dockerfile: src/MatchingService/MatchingService.Api/Dockerfile
 
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8084
+      ConnectionStrings__MatchingServiceDb: ${MATCHING_DB_CONNECTION}
+      OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY}
 
-      MongoDbSettings__ConnectionString: mongodb://mongodb:27017
-      MongoDbSettings__DatabaseName: SwiftRideMatchDB
-      MongoDbSettings__MatchingCollectionName: matching_requests
-      MongoDbSettings__DriverCollectionName: drivers
+    container_name: matching_service
+
+    ports:
+      - "8084:8084"
 
     depends_on:
-      mongodb:
+      mysql:
         condition: service_healthy
 
     networks:
       - swiftride-network
 
 
-volumes:
-  mongodb_data:
+  mysql:
+    image: mysql:8.4
+
+    container_name: swiftride_mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: swiftride_matching
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-p123456"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - swiftride-network
 
 
 networks:
   swiftride-network:
     driver: bridge
+
+
+volumes:
+  mysql_data:

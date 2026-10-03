@@ -62,4 +62,55 @@ public class DriverController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPatch("{id:guid}/location")]
+    public async Task<IActionResult> UpdateLocation(
+        Guid id,
+        [FromBody] UpdateDriverLocationRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _driverService.UpdateLocationAsync(
+                id,
+                request.Latitude,
+                request.Longitude,
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> UpdateStatus(
+        Guid id,
+        [FromBody] UpdateDriverStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _driverService.UpdateStatusAsync(
+                id,
+                request.Status,
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
