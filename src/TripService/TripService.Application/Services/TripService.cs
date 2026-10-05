@@ -17,7 +17,7 @@ public class TripService : ITripService{
 	public async Task<Trip> GetByIdAsync(Guid tripId){
 		var trip = await _tripRepository.GetByIdAsync(tripId);
 		if (trip==null){
-			throw new KeyNotFoundException($"Chuyến đi {tripId} không tồn tại.");
+			throw new InvalidTripException($"Chuyến đi {tripId} không tồn tại.");
 		}
 		return trip;
 	}
