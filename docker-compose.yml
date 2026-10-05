@@ -1,61 +1,48 @@
 version: '3.8'
 
 services:
+  trip_service:
+    build:
+      context: .
+      dockerfile: src/TripService/TripService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      ConnectionStrings__TripServiceDb: ${TRIP_DB_CONNECTION}
+    container_name: trip_service
+    ports:
+      - "8081:8081"
+    networks:
+      - swiftride-network
+
 
   matching_service:
     build:
       context: .
       dockerfile: src/MatchingService/MatchingService.Api/Dockerfile
-
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8084
-      ConnectionStrings__MatchingServiceDb: ${MATCHING_DB_CONNECTION}
-      OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY}
-
+      ASPNETCORE_URLS: http://+:8083
+      ConnectionStrings__PaymentServiceDb: ${MATCHING_DB_CONNECTION}
     container_name: matching_service
-
     ports:
-      - "8084:8084"
-
-    depends_on:
-      mysql:
-        condition: service_healthy
-
+      - "8082:8082"
     networks:
       - swiftride-network
 
 
-  mysql:
-    image: mysql:8.4
-
-    container_name: swiftride_mysql
-
+  payment_service:
+    build:
+      context: .
+      dockerfile: src/PaymentService/PaymentService.Api/Dockerfile
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: swiftride_matching
-
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8083
+      ConnectionStrings__PaymentServiceDb: ${PAYMENT_DB_CONNECTION}
+      OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY}
+    container_name: payment_service
     ports:
-      - "3307:3306"
-
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-uroot",
-          "-p123456"
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
+      - "8083:8083"
     networks:
       - swiftride-network
 
@@ -63,7 +50,3 @@ services:
 networks:
   swiftride-network:
     driver: bridge
-
-
-volumes:
-  mysql_data:

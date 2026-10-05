@@ -14,6 +14,14 @@ public class TripService : ITripService{
 		_unitOfWork = unitOfWork;
 	}	
 
+	public async Task<Trip> GetByIdAsync(Guid tripId){
+		var trip = await _tripRepository.GetByIdAsync(tripId);
+		if (trip==null){
+			throw new KeyNotFoundException($"Chuyến đi {tripId} không tồn tại.");
+		}
+		return trip;
+	}
+
 	public async Task<CreatedTripResponse> CreateTripAsync(CreatedTripRequest request){
 		var trip = new Trip(
 			request.RiderId,

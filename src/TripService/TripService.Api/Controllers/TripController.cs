@@ -13,10 +13,12 @@ public class TripController : ControllerBase{
 		_tripService = tripService;
 	}
 
-	[HttpGet("{id}")]
-    public async Task<IActionResult> GetTripById(Guid id){
-    	// var result = await _tripService.GetTripById(id);
-        return Ok(new { Message = $"Trip route placeholder for ID {id} called successfully." });
+	[HttpGet("{tripId}")]
+    public async Task<IActionResult> GetTripById(
+    	[FromRoute] Guid tripId
+    	){
+    	var result = await _tripService.GetByIdAsync(tripId);
+        return Ok(result);
     }
 
 	[HttpPost]
@@ -25,6 +27,46 @@ public class TripController : ControllerBase{
 		CreatedTripRequest request
 		) {
 		var result = await _tripService.CreateTripAsync(request);
+		return CreatedAtAction(
+			nameof(GetTripById),
+			new { id = result.Id },
+			result
+			);
+	}
+
+	[HttpPost("{tripId}/driver-accept")]
+	public async Task<IActionResult> AssignDriver(
+		[FromRoute] Guid tripId,
+		[FromBody] Guid driverId
+		) {
+
+		var result = await _tripService.AssignDriverAsync(tripId, driverId);
+		return CreatedAtAction(
+			nameof(GetTripById),
+			new { id = result.Id },
+			result
+			);
+	}
+
+	[HttpPost("{tripId}/pickup")]
+	public async Task<IActionResult> UpdateStatusToPicked(
+		[FromRoute] Guid tripId
+		) {
+
+		var result = await _tripService.UpdateStatusToPicked(tripId);
+		return CreatedAtAction(
+			nameof(GetTripById),
+			new { id = result.Id },
+			result
+			);
+	}
+
+	[HttpPost("{tripId}/dropoff")]
+	public async Task<IActionResult> UpdateStatusToDropped(
+		[FromRoute] Guid tripId
+		) {
+
+		var result = await _tripService.UpdateStatusToDropped(tripId);
 		return CreatedAtAction(
 			nameof(GetTripById),
 			new { id = result.Id },
