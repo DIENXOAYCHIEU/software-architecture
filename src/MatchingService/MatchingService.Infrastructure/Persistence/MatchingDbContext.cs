@@ -10,6 +10,8 @@ public class MatchingDbContext : DbContext
     public DbSet<Driver> Drivers { get; set; }
     public DbSet<MatchingRequest> MatchingRequests { get; set; }
 
+    public DbSet<MatchingAttempt> MatchingAttempts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Driver>(entity =>
@@ -57,6 +59,29 @@ public class MatchingDbContext : DbContext
                     .HasColumnName("PickupLongitude").HasColumnType("double")
                     .IsRequired();
             });
+        });
+
+        modelBuilder.Entity<MatchingAttempt>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x =>
+                new
+                {
+                    x.MatchingRequestId,
+                    x.AttemptNumber
+                })
+                .IsUnique();
+
+            entity.HasOne(x => x.MatchingRequest)
+                .WithMany()
+                .HasForeignKey(x => x.MatchingRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Driver)
+                .WithMany()
+                .HasForeignKey(x => x.DriverId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

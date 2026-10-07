@@ -3,6 +3,7 @@ using MatchingService.Application.Interfaces;
 using MatchingService.Domain.Entities;
 using MatchingService.Domain.Exceptions;
 using MatchingService.Domain.ValueObjects;
+using MatchingService.Domain.Enums;
 
 namespace MatchingService.Application.Services;
 
@@ -93,59 +94,19 @@ public class MatchingService : IMatchingService
             : MapToResponse(entity);
     }
 
-    public async Task<MatchingResponse> StartSearchingAsync(
+    public async Task<MatchingResponse> StartMatchingAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var matching =
-            await GetEntityOrThrow(
-                id,
-                cancellationToken);
+        var matching = await GetEntityOrThrow(
+            id,
+            cancellationToken);
 
         matching.StartSearching();
 
-        await _matchingRepository.UpdateAsync(
+        return await FindAndOfferDriverAsync(
             matching,
             cancellationToken);
-
-        var drivers =
-            await _driverRepository.GetAvailableAsync(
-                cancellationToken);
-
-        if (drivers.Count == 0)
-        {
-            matching.MarkFailed();
-
-            await _matchingRepository.UpdateAsync(
-                matching,
-                cancellationToken);
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-            return MapToResponse(matching);
-        }
-
-        var nearestDriver =
-            FindNearestDriver(
-                matching.PickupLocation,
-                drivers);
-
-        matching.AssignDriver(
-            nearestDriver.Id);
-
-        nearestDriver.MarkBusy();
-
-        await _driverRepository.UpdateAsync(
-            nearestDriver,
-            cancellationToken);
-
-        await _matchingRepository.UpdateAsync(
-            matching,
-            cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return MapToResponse(matching);
     }
 
     public async Task<MatchingResponse> AssignDriverAsync(
@@ -249,29 +210,76 @@ public class MatchingService : IMatchingService
         return entity;
     }
 
-    private static Driver FindNearestDriver(
-        Location pickup,
-        List<Driver> drivers)
+    private async Task<MatchingResponse> FindAndOfferDriverAsync(
+        MatchingRequest matching,
+        CancellationToken cancellationToken)
     {
-        Driver? nearestDriver = null;
-        double shortestDistance = double.MaxValue;
-
-        foreach (var driver in drivers)
+        if (matching.AttemptCount >= matching.MaxAttempts)
         {
-            var distance = CalculateDistanceKm(
-                pickup,
-                driver.CurrentLocation);
+            matching.MarkFailed();
 
-            if (distance < shortestDistance)
-            {
-                shortestDistance = distance;
-                nearestDriver = driver;
-            }
+            await _matchingRepository.UpdateAsync(
+                matching,
+                cancellationToken);
+
+            return MapToResponse(matching);
         }
 
-        return nearestDriver
-            ?? throw new InvalidOperationException(
-                "No available driver found.");
+        var attempts =
+            await _matchingRepository.GetAttemptsByMatchingIdAsync(
+                matching.Id,
+                cancellationToken);
+
+        var attemptedDriverIds =
+            attempts
+                .Select(x => x.DriverId)
+                .ToHashSet();
+
+        var availableDrivers =
+            await _driverRepository.GetAvailableAsync(
+                cancellationToken);
+
+        var candidates = availableDrivers
+            .Where(driver =>
+                driver.CurrentLocation != null &&
+                !attemptedDriverIds.Contains(driver.Id))
+            .OrderBy(driver =>
+                CalculateDistanceKm(
+                    matching.PickupLocation,
+                    driver.CurrentLocation!))
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            matching.MarkFailed();
+
+            await _matchingRepository.UpdateAsync(
+                matching,
+                cancellationToken);
+
+            return MapToResponse(matching);
+        }
+
+        var nearestDriver = candidates[0];
+
+        matching.IncrementAttempt();
+
+        matching.OfferDriver(nearestDriver.Id);
+
+        var attempt = new MatchingAttempt(
+            matching.Id,
+            nearestDriver.Id,
+            matching.AttemptCount);
+
+        await _matchingRepository.AddAttemptAsync(
+            attempt,
+            cancellationToken);
+
+        await _matchingRepository.UpdateAsync(
+            matching,
+            cancellationToken);
+
+        return MapToResponse(matching);
     }
 
     private static double CalculateDistanceKm(
@@ -312,20 +320,158 @@ public class MatchingService : IMatchingService
     }
 
     private static MatchingResponse MapToResponse(
-        MatchingRequest entity)
+    MatchingRequest entity)
     {
         return new MatchingResponse
         {
             MatchingId = entity.Id,
             TripId = entity.TripId,
             DriverId = entity.DriverId,
+
             PickupLatitude =
                 entity.PickupLocation.Latitude,
+
             PickupLongitude =
                 entity.PickupLocation.Longitude,
+
             Status = entity.Status.ToString(),
+
+            AttemptCount = entity.AttemptCount,
+            MaxAttempts = entity.MaxAttempts,
+
             CreatedAt = entity.CreatedAt,
             MatchedAt = entity.MatchedAt
         };
+    }
+
+    public async Task<MatchingResponse> AcceptDriverAsync(
+        Guid matchingId,
+        Guid driverId,
+        CancellationToken cancellationToken = default)
+    {
+        var matching =
+            await GetEntityOrThrow(
+                matchingId,
+                cancellationToken);
+
+        var attempt =
+            await _matchingRepository.GetAttemptAsync(
+                matchingId,
+                driverId,
+                cancellationToken);
+
+        if (attempt == null)
+        {
+            throw new KeyNotFoundException(
+                "Active matching attempt was not found.");
+        }
+
+        if (matching.DriverId != driverId)
+        {
+            throw new InvalidOperationException(
+                "This driver is not the current offered driver.");
+        }
+
+        if (matching.Status == MatchingStatus.Matched)
+        {
+            throw new InvalidOperationException(
+                "Matching has already been completed.");
+        }
+
+        var driver =
+            await _driverRepository.GetByIdAsync(
+                driverId,
+                cancellationToken);
+
+        if (driver == null)
+        {
+            throw new KeyNotFoundException(
+                "Driver not found.");
+        }
+
+        if (driver.Status != DriverStatus.Available)
+        {
+            throw new InvalidOperationException(
+                "Driver is no longer available.");
+        }
+
+        attempt.Accept();
+
+        matching.AssignDriver(driverId);
+
+        driver.MarkBusy();
+
+        await _matchingRepository.UpdateAttemptAsync(
+            attempt,
+            cancellationToken);
+
+        await _driverRepository.UpdateAsync(
+            driver,
+            cancellationToken);
+
+        await _matchingRepository.UpdateAsync(
+            matching,
+            cancellationToken);
+
+        return MapToResponse(matching);
+    }
+
+    public async Task<MatchingResponse> RejectDriverAsync(
+        Guid matchingId,
+        Guid driverId,
+        CancellationToken cancellationToken = default)
+    {
+        var matching =
+            await GetEntityOrThrow(
+                matchingId,
+                cancellationToken);
+
+        var attempt =
+            await _matchingRepository.GetAttemptAsync(
+                matchingId,
+                driverId,
+                cancellationToken);
+
+        if (attempt == null)
+        {
+            throw new KeyNotFoundException(
+                "Active matching attempt was not found.");
+        }
+
+        if (matching.DriverId != driverId)
+        {
+            throw new InvalidOperationException(
+                "This driver is not the current offered driver.");
+        }
+
+        attempt.Reject();
+
+        matching.ClearDriver();
+
+        await _matchingRepository.UpdateAttemptAsync(
+            attempt,
+            cancellationToken);
+
+        await _matchingRepository.UpdateAsync(
+            matching,
+            cancellationToken);
+
+        if (matching.AttemptCount >= matching.MaxAttempts)
+        {
+            matching.MarkFailed();
+
+            await _matchingRepository.UpdateAsync(
+                matching,
+                cancellationToken);
+
+            await _unitOfWork.SaveChangesAsync(
+                cancellationToken);
+
+            return MapToResponse(matching);
+        }
+
+        return await FindAndOfferDriverAsync(
+            matching,
+            cancellationToken);
     }
 }
