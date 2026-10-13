@@ -16,10 +16,10 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Tự tạo database + bảng (đồ án sơ bộ; sau này dùng EF Migrations).</summary>
+    /// <summary>Apply pending EF Core migrations for the payment database.</summary>
     public static void InitializePaymentDatabase(this IServiceProvider sp)
     {
         using var scope = sp.CreateScope();
-        scope.ServiceProvider.GetRequiredService<PaymentDbContext>().Database.EnsureCreated();
+        scope.ServiceProvider.GetRequiredService<PaymentDbContext>().Database.Migrate();
     }
 }

@@ -50,3 +50,5 @@ GET {{host}}/payments/{id}/ledger
 
 ### 8. Hoàn tiền => Refunded, ledger thêm 2 bút toán đảo
 POST {{host}}/payments/{id}/refund
+Content-Type: application/json
+Idempotency-Key: refund-001

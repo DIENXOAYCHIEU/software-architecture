@@ -10,7 +10,8 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")!);
+    .AddInfrastructure(builder.Configuration.GetConnectionString("PayDb")
+        ?? throw new InvalidOperationException("Connection string 'PayDb' is required."));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -60,7 +61,11 @@ g.MapGet("/by-trip/{tripId:guid}", async (Guid tripId, PaymentAppService svc, Ca
 g.MapGet("/{id:guid}/ledger", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
     await svc.GetLedgerAsync(id, ct));
 
-g.MapPost("/{id:guid}/refund", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
-    PaymentResponse.From(await svc.RefundAsync(id, ct)));
+g.MapPost("/{id:guid}/refund", async (
+    Guid id,
+    [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+    PaymentAppService svc,
+    CancellationToken ct) =>
+    PaymentResponse.From(await svc.RefundAsync(id, idempotencyKey, ct)));
 
 app.Run();

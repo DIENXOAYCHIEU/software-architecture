@@ -25,7 +25,12 @@ public class PaymentAppService(
 
         // 2. Idempotency: cùng key => trả lại kết quả cũ, không trừ tiền lần nữa
         var existing = await repo.GetByIdempotencyKeyAsync(idempotencyKey, ct);
-        if (existing != null) return (existing, false);
+        if (existing != null)
+        {
+            if (!string.Equals(existing.RequestFingerprint, req.ComputeFingerprint(), StringComparison.Ordinal))
+                throw new PaymentException(409, "Idempotency-Key đã được dùng cho payload khác.");
+            return (existing, false);
+        }
 
         // 3. Mỗi chuyến chỉ được thanh toán thành công một lần
         if (await repo.HasSucceededForTripAsync(req.TripId, ct))
@@ -33,7 +38,8 @@ public class PaymentAppService(
 
         // 4. Lưu giao dịch ở trạng thái Pending
         var payment = Payment.Create(req.TripId, req.RiderId, req.Amount,
-            req.Currency ?? "VND", req.Method, idempotencyKey);
+            req.Currency?.Trim().ToUpperInvariant() ?? "VND",
+            req.Method, idempotencyKey, req.ComputeFingerprint());
         try
         {
             await repo.AddAsync(payment, ct);
@@ -41,7 +47,11 @@ public class PaymentAppService(
         catch (DuplicateIdempotencyKeyException)   // 2 request cùng key đến cùng lúc
         {
             var raced = await repo.GetByIdempotencyKeyAsync(idempotencyKey, ct);
-            return (raced!, false);
+            if (raced is null)
+                throw;
+            if (!string.Equals(raced.RequestFingerprint, req.ComputeFingerprint(), StringComparison.Ordinal))
+                throw new PaymentException(409, "Idempotency-Key đã được dùng cho payload khác.");
+            return (raced, false);
         }
 
         // 5. Gọi cổng thanh toán
@@ -84,17 +94,27 @@ public class PaymentAppService(
             e.Id, e.Account, e.DebitAmount, e.CreditAmount, e.Type, e.CreatedAt)).ToList();
     }
 
-    public async Task<Payment> RefundAsync(Guid id, CancellationToken ct)
+    public async Task<Payment> RefundAsync(Guid id, string? refundIdempotencyKey, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(refundIdempotencyKey))
+            throw new PaymentException(400, "Thiếu header Idempotency-Key cho refund.");
+
         var payment = await GetAsync(id, ct);
-        if (payment.Status == PaymentStatus.Refunded) return payment;   // idempotent
+        if (payment.Status == PaymentStatus.Refunded)
+        {
+            if (!string.Equals(payment.RefundIdempotencyKey, refundIdempotencyKey, StringComparison.Ordinal))
+                throw new PaymentException(409, "Giao dịch đã được hoàn tiền với idempotency key khác.");
+            return payment;
+        }
+        if (payment.Status != PaymentStatus.Succeeded)
+            throw new PaymentException(409, "Chỉ giao dịch đã thanh toán thành công mới được hoàn tiền.");
 
         var result = await processors.Create(payment.Method)
             .RefundAsync(payment.Amount, payment.Currency, ct);
         if (!result.Success)
             throw new PaymentException(502, result.Error ?? "Cổng thanh toán từ chối hoàn tiền.");
 
-        payment.Refund();               // ném InvalidOperationException nếu chưa Succeeded -> 409
+        payment.Refund(refundIdempotencyKey); // ném InvalidOperationException nếu chưa Succeeded -> 409
         await repo.SaveChangesAsync(ct);
         await events.PublishAsync("PaymentRefunded", new { PaymentId = payment.Id, payment.TripId }, ct);
         return payment;
