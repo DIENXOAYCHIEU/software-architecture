@@ -33,9 +33,10 @@ public record LedgerEntryResponse(
 public record PaymentResponse(
     Guid Id, Guid TripId, Guid RiderId, decimal Amount, string Currency,
     PaymentMethod Method, PaymentStatus Status, string? FailureReason,
-    DateTime CreatedAt, DateTime UpdatedAt)
+    DateTime CreatedAt, DateTime UpdatedAt, int AttemptCount, DateTime? NextRetryAtUtc)
 {
     public static PaymentResponse From(Payment p) => new(
         p.Id, p.TripId, p.RiderId, p.Amount, p.Currency,
-        p.Method, p.Status, p.FailureReason, p.CreatedAt, p.UpdatedAt);
+        p.Method, p.Status, p.FailureReason, p.CreatedAt, p.UpdatedAt,
+        p.AttemptCount, p.NextRetryAtUtc);
 }

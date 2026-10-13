@@ -97,14 +97,74 @@ public sealed class PaymentCoreTests
         Assert.Throws<InvalidOperationException>(() => payment.Refund("refund-key"));
     }
 
+    [Fact]
+    public async Task CreateAsync_TransientGatewayFailureLeavesPaymentPendingAfterRetryLimit()
+    {
+        var repository = new InMemoryPaymentRepository();
+        var processor = new TestPaymentProcessor
+        {
+            Result = new GatewayResult(false, "temporarily unavailable", GatewayFailureKind.Transient)
+        };
+        var service = CreateService(repository, processor, maxAttempts: 2);
+
+        var result = await service.CreateAsync(CreateRequest(), "retry-key", CancellationToken.None);
+
+        Assert.Equal(PaymentStatus.Pending, result.Payment.Status);
+        Assert.Equal(2, processor.ChargeCalls);
+        Assert.Equal(2, result.Payment.AttemptCount);
+        Assert.NotNull(result.Payment.NextRetryAtUtc);
+    }
+
+    [Fact]
+    public async Task CreateAsync_PermanentGatewayFailureMarksPaymentFailedWithoutRetry()
+    {
+        var repository = new InMemoryPaymentRepository();
+        var processor = new TestPaymentProcessor
+        {
+            Result = new GatewayResult(false, "declined", GatewayFailureKind.Permanent)
+        };
+        var service = CreateService(repository, processor);
+
+        var result = await service.CreateAsync(CreateRequest(), "failed-key", CancellationToken.None);
+
+        Assert.Equal(PaymentStatus.Failed, result.Payment.Status);
+        Assert.Equal(1, processor.ChargeCalls);
+        Assert.Null(result.Payment.NextRetryAtUtc);
+    }
+
+    [Fact]
+    public async Task CreateAsync_GatewayTimeoutIsRetriedAsTransientFailure()
+    {
+        var repository = new InMemoryPaymentRepository();
+        var processor = new TestPaymentProcessor { Delay = TimeSpan.FromMilliseconds(100) };
+        var service = CreateService(repository, processor, maxAttempts: 2, timeoutSeconds: 0);
+
+        var result = await service.CreateAsync(CreateRequest(), "timeout-key", CancellationToken.None);
+
+        Assert.Equal(PaymentStatus.Pending, result.Payment.Status);
+        Assert.Equal(2, processor.ChargeCalls);
+    }
+
     private static PaymentAppService CreateService(
         InMemoryPaymentRepository repository,
-        TestPaymentProcessor processor) =>
+        TestPaymentProcessor processor,
+        int maxAttempts = 1,
+        int timeoutSeconds = 1) =>
         new(
             repository,
             new TestProcessorFactory(processor),
             new TestEventPublisher(),
-            NullLogger<PaymentAppService>.Instance);
+            NullLogger<PaymentAppService>.Instance,
+            new TestPaymentTokenProvider(),
+            new ReliabilityOptions
+            {
+                MaxGatewayAttempts = maxAttempts,
+                MaxTotalAttempts = 5,
+                GatewayTimeoutSeconds = timeoutSeconds,
+                RetryBaseDelayMilliseconds = 1,
+                RetryMaxDelayMilliseconds = 1
+            },
+            new TestCorrelationIdAccessor());
 
     private static CreatePaymentRequest CreateRequest() =>
         new(Guid.NewGuid(), Guid.NewGuid(), 85000m, PaymentMethod.Card, "tok_test");
@@ -135,6 +195,11 @@ public sealed class PaymentCoreTests
         public Task<List<LedgerEntry>> GetLedgerAsync(Guid paymentId, CancellationToken ct) =>
             Task.FromResult(payments.Single(x => x.Id == paymentId).LedgerEntries.ToList());
 
+        public Task<List<Payment>> GetPendingForRetryAsync(DateTime nowUtc, int limit, CancellationToken ct) =>
+            Task.FromResult(payments.Where(x => x.Status == PaymentStatus.Pending &&
+                                                x.NextRetryAtUtc <= nowUtc)
+                .Take(limit).ToList());
+
         public Task AddAsync(Payment payment, CancellationToken ct)
         {
             if (payments.Any(x => x.IdempotencyKey == payment.IdempotencyKey))
@@ -155,11 +220,15 @@ public sealed class PaymentCoreTests
     {
         public int ChargeCalls { get; private set; }
         public int RefundCalls { get; private set; }
+        public GatewayResult Result { get; init; } = new(true);
+        public TimeSpan Delay { get; init; }
 
-        public Task<GatewayResult> ChargeAsync(decimal amount, string currency, string token, CancellationToken ct)
+        public async Task<GatewayResult> ChargeAsync(decimal amount, string currency, string token, CancellationToken ct)
         {
             ChargeCalls++;
-            return Task.FromResult(new GatewayResult(true));
+            if (Delay > TimeSpan.Zero)
+                await Task.Delay(Delay, ct);
+            return Result;
         }
 
         public Task<GatewayResult> RefundAsync(decimal amount, string currency, CancellationToken ct)
@@ -173,5 +242,19 @@ public sealed class PaymentCoreTests
     {
         public Task PublishAsync(string eventName, object payload, CancellationToken ct = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class TestPaymentTokenProvider : IPaymentTokenProvider
+    {
+        public Task StoreTokenAsync(Payment payment, string token, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public Task<string?> GetTokenAsync(Payment payment, CancellationToken ct) =>
+            Task.FromResult<string?>("tok_test");
+    }
+
+    private sealed class TestCorrelationIdAccessor : ICorrelationIdAccessor
+    {
+        public string? Current { get; set; }
     }
 }

@@ -11,7 +11,7 @@ public abstract class FakeProcessorBase : IPaymentProcessor
     {
         await Task.Delay(100, ct);
         return token.StartsWith("tok_fail", StringComparison.OrdinalIgnoreCase)
-            ? new GatewayResult(false, "Thẻ/ví bị từ chối (giả lập).")
+            ? new GatewayResult(false, "Thẻ/ví bị từ chối (giả lập).", GatewayFailureKind.Permanent)
             : new GatewayResult(true);
     }
 

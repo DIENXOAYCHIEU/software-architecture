@@ -2,6 +2,7 @@
 @host = http://localhost:5000
 @tripId = 11111111-1111-1111-1111-111111111111
 @riderId = 22222222-2222-2222-2222-222222222222
+@correlationId = payment-test-001
 
 ### 0. Health
 GET {{host}}/health
@@ -10,6 +11,7 @@ GET {{host}}/health
 POST {{host}}/payments
 Content-Type: application/json
 Idempotency-Key: pay-trip-001
+X-Correlation-ID: {{correlationId}}
 
 { "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Card", "paymentToken": "tok_visa_ok" }
 
@@ -17,6 +19,7 @@ Idempotency-Key: pay-trip-001
 POST {{host}}/payments
 Content-Type: application/json
 Idempotency-Key: pay-trip-001
+X-Correlation-ID: {{correlationId}}
 
 { "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Card", "paymentToken": "tok_visa_ok" }
 
@@ -26,6 +29,15 @@ Content-Type: application/json
 Idempotency-Key: pay-trip-001-again
 
 { "tripId": "{{tripId}}", "riderId": "{{riderId}}", "amount": 85000, "method": "Wallet", "paymentToken": "tok_wallet" }
+
+### 3b. Gateway timeout/transient retry demo
+### This scenario requires a gateway test double that returns a transient result.
+POST {{host}}/payments
+Content-Type: application/json
+Idempotency-Key: pay-trip-retry-001
+X-Correlation-ID: {{correlationId}}
+
+{ "tripId": "44444444-4444-4444-4444-444444444444", "riderId": "{{riderId}}", "amount": 50000, "method": "Card", "paymentToken": "tok_retry" }
 
 ### 4. Thanh toán thất bại (token tok_fail...) => status Failed
 POST {{host}}/payments
@@ -52,3 +64,4 @@ GET {{host}}/payments/{id}/ledger
 POST {{host}}/payments/{id}/refund
 Content-Type: application/json
 Idempotency-Key: refund-001
+X-Correlation-ID: {{correlationId}}

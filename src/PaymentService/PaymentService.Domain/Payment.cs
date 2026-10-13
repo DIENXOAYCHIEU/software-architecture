@@ -22,6 +22,8 @@ public class Payment
     public string RequestFingerprint { get; private set; } = "";
     public string? RefundIdempotencyKey { get; private set; }
     public string? FailureReason { get; private set; }
+    public int AttemptCount { get; private set; }
+    public DateTime? NextRetryAtUtc { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
     public List<LedgerEntry> LedgerEntries { get; } = new();
@@ -43,6 +45,7 @@ public class Payment
             Amount = amount, Currency = currency, Method = method,
             IdempotencyKey = idempotencyKey, RequestFingerprint = requestFingerprint,
             Status = PaymentStatus.Pending,
+            AttemptCount = 0,
             CreatedAt = now, UpdatedAt = now
         };
     }
@@ -52,6 +55,8 @@ public class Payment
     {
         EnsureStatus(PaymentStatus.Pending);
         Status = PaymentStatus.Succeeded;
+        FailureReason = null;
+        NextRetryAtUtc = null;
         UpdatedAt = DateTime.UtcNow;
         LedgerEntries.Add(LedgerEntry.Debit(Id, $"rider:{RiderId}", Amount, LedgerEntryType.Charge));
         LedgerEntries.Add(LedgerEntry.Credit(Id, PlatformAccount, Amount, LedgerEntryType.Charge));
@@ -64,6 +69,25 @@ public class Payment
             throw new ArgumentException("Failure reason is required.", nameof(reason));
         Status = PaymentStatus.Failed;
         FailureReason = reason;
+        NextRetryAtUtc = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkRetryPending(string reason, DateTime nextRetryAtUtc)
+    {
+        EnsureStatus(PaymentStatus.Pending);
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Retry reason is required.", nameof(reason));
+        Status = PaymentStatus.Pending;
+        FailureReason = reason;
+        NextRetryAtUtc = nextRetryAtUtc;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkAttemptStarted()
+    {
+        EnsureStatus(PaymentStatus.Pending);
+        AttemptCount++;
         UpdatedAt = DateTime.UtcNow;
     }
 

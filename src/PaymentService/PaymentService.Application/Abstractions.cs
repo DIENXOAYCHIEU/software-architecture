@@ -2,7 +2,12 @@ using PaymentService.Domain;
 
 namespace PaymentService.Application;
 
-public record GatewayResult(bool Success, string? Error = null);
+public enum GatewayFailureKind { None, Permanent, Transient }
+
+public record GatewayResult(
+    bool Success,
+    string? Error = null,
+    GatewayFailureKind FailureKind = GatewayFailureKind.None);
 
 /// <summary>Cổng thanh toán (Card / Wallet). Trong đồ án dùng bản giả lập.</summary>
 public interface IPaymentProcessor
@@ -15,6 +20,17 @@ public interface IPaymentProcessor
 public interface IPaymentProcessorFactory
 {
     IPaymentProcessor Create(PaymentMethod method);
+}
+
+public interface IPaymentTokenProvider
+{
+    Task<string?> GetTokenAsync(Payment payment, CancellationToken ct);
+    Task StoreTokenAsync(Payment payment, string token, CancellationToken ct);
+}
+
+public interface ICorrelationIdAccessor
+{
+    string? Current { get; set; }
 }
 
 /// <summary>Publisher sự kiện (PaymentSettled, PaymentFailed...). Sau này thay bằng RabbitMQ/MassTransit.</summary>
@@ -31,6 +47,7 @@ public interface IPaymentRepository
     Task<bool> HasSucceededForTripAsync(Guid tripId, CancellationToken ct);
     Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct);
     Task<List<LedgerEntry>> GetLedgerAsync(Guid paymentId, CancellationToken ct);
+    Task<List<Payment>> GetPendingForRetryAsync(DateTime nowUtc, int limit, CancellationToken ct);
 
     /// <exception cref="DuplicateIdempotencyKeyException">Trùng Idempotency-Key (race condition).</exception>
     Task AddAsync(Payment payment, CancellationToken ct);
