@@ -10,7 +10,10 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")!);
+    .AddInfrastructure(builder.Configuration.GetConnectionString("PayDb")
+        ?? throw new InvalidOperationException("Connection string 'PayDb' is required."),
+        builder.Configuration.GetSection("Reliability").Get<ReliabilityOptions>()
+        ?? new ReliabilityOptions());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -21,6 +24,22 @@ app.Services.InitializePaymentDatabase();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.Use(async (ctx, next) =>
+{
+    var correlationId = ctx.Request.Headers["X-Correlation-ID"].FirstOrDefault();
+    if (string.IsNullOrWhiteSpace(correlationId))
+        correlationId = Guid.NewGuid().ToString("N");
+
+    ctx.Response.Headers["X-Correlation-ID"] = correlationId;
+    var accessor = ctx.RequestServices.GetRequiredService<ICorrelationIdAccessor>();
+    accessor.Current = correlationId;
+    using var scope = app.Logger.BeginScope(new Dictionary<string, object>
+    {
+        ["CorrelationId"] = correlationId
+    });
+    await next();
+});
 
 // Middleware map lỗi nghiệp vụ -> HTTP status
 app.Use(async (ctx, next) =>
@@ -60,7 +79,11 @@ g.MapGet("/by-trip/{tripId:guid}", async (Guid tripId, PaymentAppService svc, Ca
 g.MapGet("/{id:guid}/ledger", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
     await svc.GetLedgerAsync(id, ct));
 
-g.MapPost("/{id:guid}/refund", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
-    PaymentResponse.From(await svc.RefundAsync(id, ct)));
+g.MapPost("/{id:guid}/refund", async (
+    Guid id,
+    [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+    PaymentAppService svc,
+    CancellationToken ct) =>
+    PaymentResponse.From(await svc.RefundAsync(id, idempotencyKey, ct)));
 
 app.Run();

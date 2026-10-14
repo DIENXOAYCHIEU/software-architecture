@@ -23,6 +23,14 @@ public class PaymentRepository(PaymentDbContext db) : IPaymentRepository
         db.LedgerEntries.AsNoTracking().Where(e => e.PaymentId == paymentId)
             .OrderBy(e => e.CreatedAt).ToListAsync(ct);
 
+    public Task<List<Payment>> GetPendingForRetryAsync(DateTime nowUtc, int limit, CancellationToken ct) =>
+        db.Payments.Where(p => p.Status == PaymentStatus.Pending &&
+                               p.NextRetryAtUtc != null &&
+                               p.NextRetryAtUtc <= nowUtc)
+            .OrderBy(p => p.NextRetryAtUtc)
+            .Take(limit)
+            .ToListAsync(ct);
+
     public async Task AddAsync(Payment payment, CancellationToken ct)
     {
         db.Payments.Add(payment);
