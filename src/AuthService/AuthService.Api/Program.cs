@@ -39,6 +39,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
+        NameClaimType = "name",
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });

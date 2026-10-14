@@ -4,10 +4,10 @@ using AuthService.Application.DTOs;
 namespace AuthService.Application.Interfaces;
 
 public interface IAuthService{
-	Task<User?> RegisterAsync(RegisterRequest request);
+	Task<AuthResponse?> RegisterAsync(RegisterRequest request);
 	Task<User?> GetById(Guid userId);
-	Task<TokenResponse?> LoginAsync(LoginRequest request);
-    Task<TokenResponse?> RefreshTokenAsync(string refreshToken);
+	Task<AuthResponse?> LoginAsync(LoginRequest request);
+    Task<AuthResponse?> RefreshTokenAsync(string refreshToken);
 	Task<bool> RevokeRefreshTokenAsync(string refreshToken);
 
 }

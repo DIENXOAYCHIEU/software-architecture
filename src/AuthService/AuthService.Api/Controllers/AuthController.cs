@@ -9,9 +9,10 @@ namespace AuthService.Api.Controller;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase{
 	private readonly IAuthService _authService;
+
 	public AuthController(IAuthService _authService){
 		this._authService=_authService;
-	} 
+	}
 
 	[HttpGet("{userId}")]
 	public async Task<IActionResult> GetById(
@@ -25,12 +26,8 @@ public class AuthController : ControllerBase{
 	public async Task<IActionResult> Register(
 		[FromBody] RegisterRequest request
 		){
-		var user = await _authService.RegisterAsync(request);
-		return CreatedAtAction(
-			nameof(GetById),
-			new {userId=user.Id},
-			user
-			);
+		var response = await _authService.RegisterAsync(request);
+		return Ok(response);
 	}
 
 	[HttpPost("login")]
@@ -59,8 +56,9 @@ public class AuthController : ControllerBase{
 	public IActionResult Protected()
 	{
 	    var username = User.Identity?.Name;
-	    return Ok($"Hello, {username}! This is a protected endpoint.");
+	    return Ok($"Hello, {username} This is a protected endpoint.");
 	}
+
 
 	[HttpPost("revoke")]
 	public async Task<IActionResult> Revoke(
@@ -69,9 +67,9 @@ public class AuthController : ControllerBase{
 	    var success = await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
 	    if (!success)
 	    {
-	        return BadRequest("Invalid or already revoked refresh token.");
+	        return BadRequest("Không hợp lệ hoặc refresh token đã được thu hồi.");
 	    }
 
-	    return Ok("Refresh token revoked.");
+	    return Ok("Đã thu hồi refresh token thành công.");
 	}
 }
