@@ -19,4 +19,21 @@ public interface IMatchingRepository
     Task UpdateAsync(
         MatchingRequest matchingRequest,
         CancellationToken cancellationToken = default);
+
+    Task AddAttemptAsync(
+        MatchingAttempt attempt,
+        CancellationToken cancellationToken = default);
+
+    Task<MatchingAttempt?> GetAttemptAsync(
+        Guid matchingId,
+        Guid driverId,
+        CancellationToken cancellationToken = default);
+
+    Task<List<MatchingAttempt>> GetAttemptsByMatchingIdAsync(
+        Guid matchingId,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateAttemptAsync(
+        MatchingAttempt attempt,
+        CancellationToken cancellationToken = default);
 }

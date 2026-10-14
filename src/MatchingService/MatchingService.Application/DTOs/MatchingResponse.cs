@@ -2,19 +2,23 @@ namespace MatchingService.Application.DTOs;
 
 public class MatchingResponse
 {
-    public Guid MatchingId { get; set; }
+    public Guid MatchingId { get; init; }
 
-    public Guid TripId { get; set; }
+    public Guid TripId { get; init; }
 
-    public Guid? DriverId { get; set; }
+    public Guid? DriverId { get; init; }
 
-    public double PickupLatitude { get; set; }
+    public double PickupLatitude { get; init; }
 
-    public double PickupLongitude { get; set; }
+    public double PickupLongitude { get; init; }
 
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; }
+    public int AttemptCount { get; init; }
 
-    public DateTime? MatchedAt { get; set; }
+    public int MaxAttempts { get; init; }
+
+    public DateTime CreatedAt { get; init; }
+
+    public DateTime? MatchedAt { get; init; }
 }

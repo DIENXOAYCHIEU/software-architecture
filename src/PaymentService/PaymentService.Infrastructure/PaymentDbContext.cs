@@ -20,6 +20,10 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
             e.Property(x => x.Method).HasConversion<string>().HasMaxLength(20);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
             e.Property(x => x.IdempotencyKey).HasMaxLength(100).IsRequired();
+            e.Property(x => x.RequestFingerprint).HasMaxLength(64).IsRequired();
+            e.Property(x => x.RefundIdempotencyKey).HasMaxLength(100);
+            e.Property(x => x.AttemptCount);
+            e.Property(x => x.NextRetryAtUtc);
             e.Property(x => x.FailureReason).HasMaxLength(500);
             e.HasIndex(x => x.IdempotencyKey).IsUnique();
             e.HasIndex(x => x.TripId);

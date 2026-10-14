@@ -10,6 +10,7 @@ public class MatchingController : ControllerBase
 {
     private readonly IMatchingService _matchingService;
     private readonly IPricingService _pricingService;
+
     public MatchingController(
         IMatchingService matchingService,
         IPricingService pricingService)
@@ -18,10 +19,7 @@ public class MatchingController : ControllerBase
         _pricingService = pricingService;
     }
 
-    // =====================================================
-    // CREATE
-    // =====================================================
-
+    // CREATE MATCHING REQUEST
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateMatchingRequest request,
@@ -39,7 +37,21 @@ public class MatchingController : ControllerBase
                 new { id = result.MatchingId },
                 result);
         }
-        catch (Exception ex)
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new
+            {
+                message = ex.Message
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -48,10 +60,7 @@ public class MatchingController : ControllerBase
         }
     }
 
-    // =====================================================
-    // GET BY ID
-    // =====================================================
-
+    // GET BY MATCHING ID
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(
         Guid id,
@@ -73,10 +82,7 @@ public class MatchingController : ControllerBase
         return Ok(result);
     }
 
-    // =====================================================
     // GET BY TRIP ID
-    // =====================================================
-
     [HttpGet("trip/{tripId:guid}")]
     public async Task<IActionResult> GetByTripId(
         Guid tripId,
@@ -91,26 +97,24 @@ public class MatchingController : ControllerBase
         {
             return NotFound(new
             {
-                message = "Matching request for this trip was not found."
+                message =
+                    "Matching request for this trip was not found."
             });
         }
 
         return Ok(result);
     }
 
-    // =====================================================
-    // START SEARCHING
-    // =====================================================
-
+    // START MATCHING
     [HttpPost("{id:guid}/search")]
-    public async Task<IActionResult> StartSearching(
+    public async Task<IActionResult> StartMatching(
         Guid id,
         CancellationToken cancellationToken)
     {
         try
         {
             var result =
-                await _matchingService.StartSearchingAsync(
+                await _matchingService.StartMatchingAsync(
                     id,
                     cancellationToken);
 
@@ -123,7 +127,7 @@ public class MatchingController : ControllerBase
                 message = ex.Message
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -132,12 +136,9 @@ public class MatchingController : ControllerBase
         }
     }
 
-    // =====================================================
-    // ASSIGN DRIVER
-    // =====================================================
-
-    [HttpPost("{id:guid}/assign")]
-    public async Task<IActionResult> AssignDriver(
+    // DRIVER ACCEPT
+    [HttpPost("{id:guid}/accept")]
+    public async Task<IActionResult> AcceptDriver(
         Guid id,
         [FromBody] AssignDriverRequest request,
         CancellationToken cancellationToken)
@@ -145,7 +146,7 @@ public class MatchingController : ControllerBase
         try
         {
             var result =
-                await _matchingService.AssignDriverAsync(
+                await _matchingService.AcceptDriverAsync(
                     id,
                     request.DriverId,
                     cancellationToken);
@@ -159,7 +160,7 @@ public class MatchingController : ControllerBase
                 message = ex.Message
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -168,20 +169,19 @@ public class MatchingController : ControllerBase
         }
     }
 
-    // =====================================================
-    // FAIL
-    // =====================================================
-
-    [HttpPost("{id:guid}/fail")]
-    public async Task<IActionResult> Fail(
+    // DRIVER REJECT
+    [HttpPost("{id:guid}/reject")]
+    public async Task<IActionResult> RejectDriver(
         Guid id,
+        [FromBody] AssignDriverRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
             var result =
-                await _matchingService.MarkFailedAsync(
+                await _matchingService.RejectDriverAsync(
                     id,
+                    request.DriverId,
                     cancellationToken);
 
             return Ok(result);
@@ -193,7 +193,7 @@ public class MatchingController : ControllerBase
                 message = ex.Message
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -202,10 +202,7 @@ public class MatchingController : ControllerBase
         }
     }
 
-    // =====================================================
-    // CANCEL
-    // =====================================================
-
+    // CANCEL MATCHING
     [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(
         Guid id,
@@ -227,7 +224,7 @@ public class MatchingController : ControllerBase
                 message = ex.Message
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -236,6 +233,7 @@ public class MatchingController : ControllerBase
         }
     }
 
+    // PRICING QUOTE
     [HttpPost("quote")]
     public async Task<IActionResult> Quote(
         [FromBody] PricingRequest request,
@@ -257,7 +255,7 @@ public class MatchingController : ControllerBase
                 message = ex.Message
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             return BadRequest(new
             {
@@ -265,5 +263,4 @@ public class MatchingController : ControllerBase
             });
         }
     }
-
 }

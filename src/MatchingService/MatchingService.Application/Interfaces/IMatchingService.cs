@@ -16,20 +16,21 @@ public interface IMatchingService
         Guid tripId,
         CancellationToken cancellationToken = default);
 
-    Task<MatchingResponse> StartSearchingAsync(
-        Guid id,
-        CancellationToken cancellationToken = default);
-
-    Task<MatchingResponse> AssignDriverAsync(
-        Guid id,
-        Guid driverId,
-        CancellationToken cancellationToken = default);
-
-    Task<MatchingResponse> MarkFailedAsync(
+    Task<MatchingResponse> StartMatchingAsync(
         Guid id,
         CancellationToken cancellationToken = default);
 
     Task<MatchingResponse> CancelAsync(
         Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<MatchingResponse> AcceptDriverAsync(
+        Guid matchingId,
+        Guid driverId,
+        CancellationToken cancellationToken = default);
+
+    Task<MatchingResponse> RejectDriverAsync(
+        Guid matchingId,
+        Guid driverId,
         CancellationToken cancellationToken = default);
 }
