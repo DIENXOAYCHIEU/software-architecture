@@ -20,6 +20,9 @@ public class MatchingRequest
 
     public DateTime? MatchedAt { get; private set; }
 
+    public int AttemptCount { get; private set; }
+
+    public int MaxAttempts { get; private set; } = 3;
     private MatchingRequest()
     {
     }
@@ -103,5 +106,19 @@ public class MatchingRequest
         }
 
         Status = MatchingStatus.Cancelled;
+    }
+
+    public void OfferDriver(Guid driverId)
+    {
+        DriverId = driverId;
+    }
+    public void IncrementAttempt()
+    {
+        AttemptCount++;
+    }
+
+    public void ClearDriver()
+    {
+        DriverId = null;
     }
 }
