@@ -23,5 +23,5 @@ RUN dotnet publish "MatchingService.Api.csproj" -c Release -o /app/publish /p:Us
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-EXPOSE 8084
+EXPOSE 8082
 ENTRYPOINT ["dotnet", "MatchingService.Api.dll"]
