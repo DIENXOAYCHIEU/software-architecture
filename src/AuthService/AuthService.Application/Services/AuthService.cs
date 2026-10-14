@@ -26,9 +26,9 @@ public class AuthService : IAuthService{
 		this._configuration=_configuration;
 	}
 
-	public async Task<User?> RegisterAsync(RegisterRequest request){
+	public async Task<AuthResponse?> RegisterAsync(RegisterRequest request){
 		if(_authRepository.ExistByUsername(request.Username)){
-			throw new InvalidAuthException("Username already exists.");
+			throw new InvalidAuthException("Tên tài khoản đã tồn tại.");
 		}
 
 		var user = new User(
@@ -39,9 +39,12 @@ public class AuthService : IAuthService{
 		await _authRepository.CreateAsync(user);
 		await _unitOfWork.SaveChangesAsync();
 
-        var accessToken = GenerateAccessToken(user);
-        var refreshToken = await GenerateRefreshTokenAsync(user);
-		return user;
+		var loginRequest = new LoginRequest{
+			Username=user.Username,
+			Password = request.Password
+		};
+        var response = await this.LoginAsync(loginRequest);
+        return response;
 	}
 	
 	public async Task<User?> GetById(Guid userId){
@@ -52,7 +55,7 @@ public class AuthService : IAuthService{
 		return user;
 	}
 
-	public async Task<TokenResponse?> LoginAsync(LoginRequest request){
+	public async Task<AuthResponse?> LoginAsync(LoginRequest request){
         var user = await _authRepository.GetByUsername(request.Username);
 
         if (user == null ||
@@ -64,11 +67,12 @@ public class AuthService : IAuthService{
         var accessToken = GenerateAccessToken(user);
         var refreshToken = await GenerateRefreshTokenAsync(user);
 
-        return new TokenResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken.Token
-        };
+        var authResponse = new AuthResponse{
+        	User=user,
+        	AccessToken = accessToken,
+        	RefreshToken = refreshToken
+        	};
+		return authResponse;
     }
 
 	private string GenerateAccessToken(User user){
@@ -94,7 +98,8 @@ public class AuthService : IAuthService{
 			expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpirationMinutes"]!)),
             signingCredentials: creds);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+        return accessToken;
     }
 
 	private async Task<RefreshToken> GenerateRefreshTokenAsync(User user){
@@ -106,13 +111,13 @@ public class AuthService : IAuthService{
                 double.Parse(_configuration["Jwt:RefreshTokenExpirationDays"]!))
         };
 
-        _authRepository.AddRefreshToken(refreshToken);
+        await _authRepository.CreateRefreshTokenAsync(refreshToken);
         await _unitOfWork.SaveChangesAsync();
         return refreshToken;
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(string refreshToken){
-        var token = await _authRepository.RefreshTokens(refreshToken);
+    public async Task<AuthResponse?> RefreshTokenAsync(string refreshToken){
+        var token = await _authRepository.RefreshTokenAsync(refreshToken);
 	    if (token == null || token.IsRevoked || token.Expires < DateTime.UtcNow){
 	        return null;
 	    }
@@ -130,16 +135,17 @@ public class AuthService : IAuthService{
 
 	    await _unitOfWork.SaveChangesAsync();
 
-	    return new TokenResponse
-	    {
-	        AccessToken = newAccessToken,
-	        RefreshToken = newRefreshToken.Token
-	    };
+	    var authResponse = new AuthResponse{
+	    	User = user,
+	    	RefreshToken = newRefreshToken,
+	    	AccessToken = newAccessToken
+	    	};
+	    return authResponse;
 	}
 
 	public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
 	{
-		var token = await _authRepository.RefreshTokens(refreshToken);
+		var token = await _authRepository.RefreshTokenAsync(refreshToken);
 
 	    if (token == null || token.IsRevoked)
 	    {

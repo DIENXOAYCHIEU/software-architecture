@@ -1,5 +1,4 @@
 using AuthService.Application.Interfaces;
-using AuthService.Application.DTOs;
 using AuthService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,18 +23,18 @@ public class AuthRepository : IAuthRepository{
 		return _context.Users.Any(u=>u.Username == username);
 	}
 
-	public async Task<User> GetByUsername(string username){
+	public async Task<User?> GetByUsername(string username){
 		var user = await _context.Users
 			.FirstOrDefaultAsync(u => u.Username == username);
 
 		return user;
 	}
 
-	public void AddRefreshToken(RefreshToken refreshToken){
-		_context.RefreshTokens.Add(refreshToken);
+	public async Task CreateRefreshTokenAsync(RefreshToken refreshToken){
+		await _context.RefreshTokens.AddAsync(refreshToken);
 	}
 
-	public async Task<RefreshToken?> RefreshTokens(string refreshToken){
+	public async Task<RefreshToken?> RefreshTokenAsync(string refreshToken){
 	    var token = await _context.RefreshTokens
 	        .FirstOrDefaultAsync(t => t.Token == refreshToken);
         return token;
