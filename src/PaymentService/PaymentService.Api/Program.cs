@@ -10,8 +10,8 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration.GetConnectionString("PayDb")
-        ?? throw new InvalidOperationException("Connection string 'PayDb' is required."),
+    .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")
+        ?? throw new InvalidOperationException("Connection string 'PaymentServiceDb' is required."),
         builder.Configuration.GetSection("Reliability").Get<ReliabilityOptions>()
         ?? new ReliabilityOptions());
 

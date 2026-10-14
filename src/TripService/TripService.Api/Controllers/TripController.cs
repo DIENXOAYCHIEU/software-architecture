@@ -29,7 +29,7 @@ public class TripController : ControllerBase{
 		var result = await _tripService.CreateTripAsync(request);
 		return CreatedAtAction(
 			nameof(GetTripById),
-			new { id = result.Id },
+			new { tripId = result.Id },
 			result
 			);
 	}
@@ -43,7 +43,7 @@ public class TripController : ControllerBase{
 		var result = await _tripService.AssignDriverAsync(tripId, driverId);
 		return CreatedAtAction(
 			nameof(GetTripById),
-			new { id = result.Id },
+			new { tripId = result.Id },
 			result
 			);
 	}
@@ -56,7 +56,7 @@ public class TripController : ControllerBase{
 		var result = await _tripService.UpdateStatusToPicked(tripId);
 		return CreatedAtAction(
 			nameof(GetTripById),
-			new { id = result.Id },
+			new { tripId = result.Id },
 			result
 			);
 	}
@@ -69,7 +69,7 @@ public class TripController : ControllerBase{
 		var result = await _tripService.UpdateStatusToDropped(tripId);
 		return CreatedAtAction(
 			nameof(GetTripById),
-			new { id = result.Id },
+			new { tripId = result.Id },
 			result
 			);
 	}

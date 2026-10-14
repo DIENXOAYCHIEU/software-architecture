@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AuthService.Api.Controller;
 
 [ApiController]
-[Route("api/[controllers")]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase{
 	private readonly IAuthService _authService;
 	public AuthController(IAuthService _authService){
@@ -21,14 +21,14 @@ public class AuthController : ControllerBase{
 		return Ok(result);
 	}
 
-	[HttpPost]
+	[HttpPost("register")]
 	public async Task<IActionResult> Register(
 		[FromBody] RegisterRequest request
 		){
 		var user = await _authService.RegisterAsync(request);
 		return CreatedAtAction(
 			nameof(GetById),
-			new {id=user.Id},
+			new {userId=user.Id},
 			user
 			);
 	}

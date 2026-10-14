@@ -25,7 +25,25 @@ builder.Services.AddScoped<ITripService, TripService.Application.Services.TripSe
 
 var app = builder.Build();
 
-// app.UseAuthorization();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<TripDbContext>();
+        Console.WriteLine("--> [Docker] Đang quét file thiết kế và tạo bảng vào MySQL...");
+        await context.Database.MigrateAsync();
+        Console.WriteLine("--> [Docker] Đã tạo các bảng vào DB thành công!");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "--> [Docker LỖI] Không thể tạo bảng vào DB.");
+    }
+}
+
 app.Run();

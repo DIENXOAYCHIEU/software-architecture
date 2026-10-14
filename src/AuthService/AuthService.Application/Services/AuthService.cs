@@ -30,12 +30,17 @@ public class AuthService : IAuthService{
 		if(_authRepository.ExistByUsername(request.Username)){
 			throw new InvalidAuthException("Username already exists.");
 		}
+
 		var user = new User(
 			request.Username,
 			BCrypt.Net.BCrypt.HashPassword(request.Password)
 		);
+
 		await _authRepository.CreateAsync(user);
 		await _unitOfWork.SaveChangesAsync();
+
+        var accessToken = GenerateAccessToken(user);
+        var refreshToken = await GenerateRefreshTokenAsync(user);
 		return user;
 	}
 	
@@ -86,7 +91,7 @@ public class AuthService : IAuthService{
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpirationMinutes"]!)),
+			expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpirationMinutes"]!)),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
