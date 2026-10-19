@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  api_gateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+    container_name: api_gateway
+    ports:
+      - "5000:5000"
+    networks:
+      - swiftride-network
+    depends_on:
+      - trip_service
+      # - auth_service
+      # - matching_service
+      # - payment_service
+
   # auth_service:
   #   build:
   #     context: .
@@ -15,8 +33,6 @@ services:
   #     AccessTokenExpirationMinutes: "10"
   #     RefreshTokenExpirationDays: "60"
   #   container_name: auth_service
-  #   ports:
-  #     - "8081:8081"
   #   networks:
   #     - swiftride-network
 
@@ -29,8 +45,6 @@ services:
       ASPNETCORE_URLS: http://+:8082
       ConnectionStrings__TripServiceDb: ${TRIP_DB_CONNECTION}
     container_name: trip_service
-    ports:
-      - "8082:8082"
     networks:
       - swiftride-network
 
@@ -43,11 +57,8 @@ services:
   #     ASPNETCORE_URLS: http://+:8083
   #     ConnectionStrings__PaymentServiceDb: ${MATCHING_DB_CONNECTION}
   #   container_name: matching_service
-  #   ports:
-  #     - "8083:8083"
   #   networks:
   #     - swiftride-network
-
 
   # payment_service:
   #   build:
@@ -59,8 +70,6 @@ services:
   #     ConnectionStrings__PaymentServiceDb: ${PAYMENT_DB_CONNECTION}
   #     OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY}
   #   container_name: payment_service
-  #   ports:
-  #     - "8084:8084"
   #   networks:
   #     - swiftride-network
 

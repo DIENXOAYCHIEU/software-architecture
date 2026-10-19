@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 
-EXPOSE 8084
+EXPOSE 8081
 ENV ASPNETCORE_URLS=http://+:8081
 
 # 2. Build image
