@@ -13,7 +13,9 @@ builder.Services
     .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")
         ?? throw new InvalidOperationException("Connection string 'PaymentServiceDb' is required."),
         builder.Configuration.GetSection("Reliability").Get<ReliabilityOptions>()
-        ?? new ReliabilityOptions());
+        ?? new ReliabilityOptions(),
+        builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>()
+        ?? new RabbitMqOptions());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

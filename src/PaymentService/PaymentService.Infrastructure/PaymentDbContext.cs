@@ -7,6 +7,8 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
 {
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<ProcessedIntegrationMessage> ProcessedIntegrationMessages => Set<ProcessedIntegrationMessage>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -39,6 +41,20 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
             e.Property(x => x.DebitAmount).HasPrecision(18, 2);
             e.Property(x => x.CreditAmount).HasPrecision(18, 2);
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
+        });
+
+        b.Entity<OutboxMessage>(e =>
+        {
+            e.ToTable("outbox_messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EventName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Payload).IsRequired();
+            e.HasIndex(x => x.PublishedAtUtc);
+        });
+        b.Entity<ProcessedIntegrationMessage>(e =>
+        {
+            e.ToTable("processed_integration_messages");
+            e.HasKey(x => x.MessageId);
         });
     }
 }

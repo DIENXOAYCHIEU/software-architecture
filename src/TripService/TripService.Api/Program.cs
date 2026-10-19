@@ -5,6 +5,7 @@ using TripService.Infrastructure.Persistence.Repositories;
 
 using TripService.Application.Interfaces;
 using TripService.Application.Services;
+using TripService.Infrastructure.Integration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,8 @@ builder.Services.AddDbContext<TripDbContext>(options =>
 builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITripService, TripService.Application.Services.TripService>();
+builder.Services.AddInfrastructureIntegration(builder.Configuration.GetSection("RabbitMq").Get<TripService.Infrastructure.Integration.RabbitMqOptions>()
+    ?? new TripService.Infrastructure.Integration.RabbitMqOptions());
 
 var app = builder.Build();
 

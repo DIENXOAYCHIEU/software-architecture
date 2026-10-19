@@ -8,10 +8,12 @@ namespace TripService.Application.Services;
 public class TripService : ITripService{
 	private readonly ITripRepository _tripRepository;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ITripEventPublisher _events;
 
-	public TripService(ITripRepository tripRepository, IUnitOfWork unitOfWork){
+	public TripService(ITripRepository tripRepository, IUnitOfWork unitOfWork, ITripEventPublisher events){
 		_tripRepository = tripRepository;
 		_unitOfWork = unitOfWork;
+		_events = events;
 	}	
 
 	public async Task<Trip> GetByIdAsync(Guid tripId){
@@ -75,6 +77,12 @@ public class TripService : ITripService{
 			throw new InvalidTripException("Chuyến đi không tồn tại");
 
 		trip.DropRiderOff();
+		trip.MarkPaymentPending();
+		await _events.PublishAsync("RideCompleted", new {
+			TripId = trip.Id,
+			RiderId = trip.RiderId,
+			Amount = trip.AmountToPay ?? 85000m
+		});
 		await _unitOfWork.SaveChangesAsync();
 
 		return new AssignedTripResponse(
@@ -83,6 +91,14 @@ public class TripService : ITripService{
 			trip.Status
 			);
 
+	}
+
+	public async Task<AssignedTripResponse> UpdatePaymentStatusAsync(Guid tripId, bool paid){
+		var trip = await _tripRepository.GetByIdAsync(tripId)
+			?? throw new InvalidTripException("Chuyến đi không tồn tại");
+		if(paid) trip.MarkPaid(); else trip.MarkPaymentPending();
+		await _unitOfWork.SaveChangesAsync();
+		return new AssignedTripResponse(trip.Id, trip.DriverId, trip.Status);
 	}
 
 }

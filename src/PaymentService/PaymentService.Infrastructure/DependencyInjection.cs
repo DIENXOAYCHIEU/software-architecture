@@ -8,17 +8,23 @@ namespace PaymentService.Infrastructure;
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services, string connectionString, ReliabilityOptions options)
+        this IServiceCollection services, string connectionString, ReliabilityOptions options,
+        RabbitMqOptions rabbitOptions)
     {
         services.AddDbContext<PaymentDbContext>(o =>
             o.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IPaymentProcessorFactory, PaymentProcessorFactory>();
-        services.AddSingleton<IEventPublisher, LoggingEventPublisher>();
+        services.AddScoped<IEventPublisher, OutboxEventPublisher>();
         services.AddSingleton<IPaymentTokenProvider, InMemoryPaymentTokenProvider>();
         services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
         services.AddSingleton(options);
         services.AddHostedService<PaymentRetryWorker>();
+        services.AddSingleton(rabbitOptions);
+        services.AddSingleton<RabbitMqConnection>();
+        services.AddHostedService<PaymentOutboxWorker>();
+        services.AddHostedService<PaymentIntegrationConsumer>();
+        services.AddScoped<IIntegrationEventConsumer, PaymentIntegrationHandler>();
         return services;
     }
 

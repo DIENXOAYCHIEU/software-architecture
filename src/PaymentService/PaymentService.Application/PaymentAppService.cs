@@ -125,8 +125,8 @@ public class PaymentAppService(
         if (result?.Success == true)
         {
             payment.MarkSucceeded();
-            await repo.SaveChangesAsync(ct);
             await PublishEventAsync("PaymentSettled", payment, ct);
+            await repo.SaveChangesAsync(ct);
             return;
         }
 
@@ -141,8 +141,8 @@ public class PaymentAppService(
         }
 
         payment.MarkFailed(error);
-        await repo.SaveChangesAsync(ct);
         await PublishEventAsync("PaymentFailed", payment, ct);
+        await repo.SaveChangesAsync(ct);
     }
 
     private async Task PublishEventAsync(string eventName, Payment payment, CancellationToken ct)
@@ -201,8 +201,8 @@ public class PaymentAppService(
             throw new PaymentException(502, result.Error ?? "Cổng thanh toán từ chối hoàn tiền.");
 
         payment.Refund(refundIdempotencyKey); // ném InvalidOperationException nếu chưa Succeeded -> 409
-        await repo.SaveChangesAsync(ct);
         await events.PublishAsync("PaymentRefunded", new { PaymentId = payment.Id, payment.TripId }, ct);
+        await repo.SaveChangesAsync(ct);
         return payment;
     }
 }

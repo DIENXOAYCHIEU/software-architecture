@@ -39,6 +39,11 @@ public interface IEventPublisher
     Task PublishAsync(string eventName, object payload, CancellationToken ct = default);
 }
 
+public interface IIntegrationEventConsumer
+{
+    Task HandleAsync(string eventName, string payload, CancellationToken ct);
+}
+
 /// <summary>Repository pattern: Application không biết gì về EF Core / MySQL.</summary>
 public interface IPaymentRepository
 {
