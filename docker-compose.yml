@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: swiftride_rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   networks:
+  #     - swiftride-network
+
   api_gateway:
     build:
       context: .
@@ -8,6 +18,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5000
+      Jwt__Key: ${JWT_SECRET_KEY}
+      Jwt__Issuer: "AuthService"
+      Jwt__Audience: "AuthServiceUsers"
+      Jwt__AccessTokenExpirationMinutes: "10"
+      Jwt__RefreshTokenExpirationDays: "60"
     container_name: api_gateway
     ports:
       - "5000:5000"
@@ -15,26 +30,26 @@ services:
       - swiftride-network
     depends_on:
       - trip_service
-      # - auth_service
+      - auth_service
       # - matching_service
       # - payment_service
 
-  # auth_service:
-  #   build:
-  #     context: .
-  #     dockerfile: src/AuthService/AuthService.Api/Dockerfile
-  #   environment:
-  #     ASPNETCORE_ENVIRONMENT: Development
-  #     ASPNETCORE_URLS: http://+:8081
-  #     ConnectionStrings__AuthServiceDb: ${AUTH_DB_CONNECTION}
-  #     Jwt__Key: ${JWT_SECRET_KEY}
-  #     Jwt__Issuer: "AuthService"
-  #     Audience: "AuthServiceUsers"
-  #     AccessTokenExpirationMinutes: "10"
-  #     RefreshTokenExpirationDays: "60"
-  #   container_name: auth_service
-  #   networks:
-  #     - swiftride-network
+  auth_service:
+    build:
+      context: .
+      dockerfile: src/AuthService/AuthService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      ConnectionStrings__AuthServiceDb: ${AUTH_DB_CONNECTION}
+      Jwt__Key: ${JWT_SECRET_KEY}
+      Jwt__Issuer: "AuthService"
+      Jwt__Audience: "AuthServiceUsers"
+      Jwt__AccessTokenExpirationMinutes: "10"
+      Jwt__RefreshTokenExpirationDays: "60"
+    container_name: auth_service
+    networks:
+      - swiftride-network
 
   trip_service:
     build:

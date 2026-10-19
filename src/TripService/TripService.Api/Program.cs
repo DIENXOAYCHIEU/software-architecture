@@ -25,7 +25,6 @@ builder.Services.AddScoped<ITripService, TripService.Application.Services.TripSe
 
 var app = builder.Build();
 
-app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 
