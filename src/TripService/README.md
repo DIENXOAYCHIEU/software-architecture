@@ -12,16 +12,7 @@ Các chức năng hiện có:
 - Cập nhật trạng thái khi đón khách.
 - Cập nhật trạng thái khi trả khách.
 
-## 2. Technology Stack
-
-- **Backend:** ASP.NET Core Web API
-- **Framework:** .NET 10
-- **Database:** MySQL
-- **ORM:** Entity Framework Core
-- **API Testing:** Postman
-- **Containerization:** Docker (nếu cấu hình Docker của service đã hoàn thiện)
-
-## 3. Project Structure
+## 2. Project Structure
 
 ```text
 TripService/
@@ -46,17 +37,7 @@ TripService/
 └── README.md
 ```
 
-## 4. Prerequisites
-
-Trước khi chạy TripService, cần chuẩn bị:
-
-- .NET SDK 10.
-- MySQL Server.
-- Postman để kiểm thử API.
-- Git để lấy mã nguồn.
-- Docker Desktop nếu muốn chạy bằng Docker.
-
-## 5. Database Configuration
+## 3. Database Configuration
 
 TripService sử dụng MySQL với database mặc định trong hướng dẫn này là `swiftride_trips`.
 
@@ -82,9 +63,7 @@ Mở file `TripService.Api/appsettings.Development.json` và cấu hình:
 
 Thay `YOUR_MYSQL_USER` và `YOUR_MYSQL_PASSWORD` bằng thông tin tài khoản MySQL trên máy của bạn.
 
-**Security:** Không commit mật khẩu thật hoặc thông tin đăng nhập nhạy cảm lên Git. File `appsettings.Development.json` phải được kiểm tra trước khi commit để tránh đưa thông tin cá nhân vào repository.
-
-## 6. Apply Database Migrations
+## 4. Apply Database Migrations
 
 Mở terminal tại thư mục gốc repository `software-architecture`.
 
@@ -107,7 +86,7 @@ Lệnh này áp dụng các migration hiện có vào database được cấu h�
 
 Migration khởi tạo tạo bảng `Trips` và bảng lịch sử migration của Entity Framework Core.
 
-## 7. Run the Service Locally
+## 5. Run the Service Locally
 
 Từ thư mục gốc repository, chạy:
 
@@ -127,7 +106,7 @@ http://localhost:5000
 
 Nếu cổng khác, hãy dùng cổng được hiển thị trong terminal và cập nhật URL tương ứng trong Postman.
 
-## 8. API Endpoints
+## 6. API Endpoints
 
 Base URL minh họa:
 
@@ -145,7 +124,7 @@ http://localhost:5000
 
 Các mã HTTP trên phản ánh cách controller hiện tại trả về kết quả khi service xử lý thành công.
 
-### 8.1. Create Trip
+### 6.1. Create Trip
 
 **Request**
 
@@ -174,7 +153,7 @@ Body mẫu:
 
 Thay `riderId` bằng ID hợp lệ nếu hệ thống yêu cầu.
 
-### 8.2. Get Trip by ID
+### 6.2. Get Trip by ID
 
 ```http
 GET /api/Trip/{tripId}
@@ -182,7 +161,7 @@ GET /api/Trip/{tripId}
 
 Thay `{tripId}` bằng ID chuyến đi thực tế đã được tạo.
 
-### 8.3. Assign Driver
+### 6.3. Assign Driver
 
 ```http
 POST /api/Trip/{tripId}/driver-accept
@@ -197,7 +176,7 @@ Body là một GUID được gửi dưới dạng chuỗi JSON:
 
 Thay GUID mẫu bằng ID tài xế hợp lệ theo dữ liệu và quy tắc của hệ thống.
 
-### 8.4. Pickup
+### 6.4. Pickup
 
 ```http
 POST /api/Trip/{tripId}/pickup
@@ -205,7 +184,7 @@ POST /api/Trip/{tripId}/pickup
 
 Endpoint này cập nhật trạng thái chuyến đi khi đón khách. Không cần gửi request body theo controller hiện tại.
 
-### 8.5. Dropoff
+### 6.5. Dropoff
 
 ```http
 POST /api/Trip/{tripId}/dropoff
@@ -213,7 +192,7 @@ POST /api/Trip/{tripId}/dropoff
 
 Endpoint này cập nhật trạng thái chuyến đi khi trả khách. Không cần gửi request body theo controller hiện tại.
 
-## 9. Postman Collection
+## 7. Postman Collection
 
 Postman Collection được lưu tại:
 
@@ -238,67 +217,17 @@ Nên kiểm thử theo thứ tự:
 
 Các request phụ thuộc vào chuyến đi hoặc tài xế phải sử dụng ID phù hợp với dữ liệu thực tế.
 
-## 10. Environment Variables and Docker
+## 8. Environment Variables and Docker
 
-Khi chạy bằng Docker, cấu hình biến `TRIP_DB_CONNECTION` trong file `.env` tại thư mục gốc repository theo cấu hình Docker Compose.
+* Khi chạy bằng Docker, cấu hình biến `TRIP_DB_CONNECTION` trong file `.env` tại thư mục gốc repository theo cấu hình Docker Compose.
 
 Ví dụ minh họa:
 
 ```dotenv
 TRIP_DB_CONNECTION="Server=host.docker.internal;Port=3306;Database=swiftride_trips;User=YOUR_MYSQL_USER;Password=YOUR_MYSQL_PASSWORD;"
 ```
+* Build và chạy `trip_service`:
 
-Không commit file `.env` có chứa thông tin đăng nhập thật.
-
-Trước khi chạy Docker, kiểm tra Dockerfile, cấu hình Compose, network và khả năng kết nối đến MySQL.
-
-Các lệnh kiểm tra cấu hình và build:
-
-```powershell
-docker compose config
-docker compose build trip_service
+```cmd
+docker compose up -d --build <trip_service>
 ```
-
-Chỉ sử dụng các lệnh chạy container sau khi service `trip_service` đã được cấu hình và bật trong Docker Compose:
-
-```powershell
-docker compose up -d trip_service
-docker compose logs -f trip_service
-```
-
-## 11. Troubleshooting
-
-### Database connection failed
-
-- Kiểm tra MySQL Server đang chạy.
-- Kiểm tra host, port, database name và tài khoản.
-- Kiểm tra connection string của môi trường đang sử dụng.
-
-### 415 Unsupported Media Type
-
-- Chọn Body → raw → JSON trong Postman.
-- Đảm bảo có header `Content-Type: application/json` đối với request có JSON body.
-
-### 400 Bad Request
-
-- Kiểm tra JSON hợp lệ.
-- Kiểm tra kiểu dữ liệu và các trường bắt buộc.
-- Kiểm tra GUID được gửi trong URL hoặc request body.
-
-### 404 Not Found
-
-- Kiểm tra URL và `tripId`.
-- Xác nhận chuyến đi tồn tại trong database.
-- Kiểm tra cổng và địa chỉ API.
-
-### 500 Internal Server Error
-
-- Kiểm tra log trong terminal chạy TripService.
-- Kiểm tra database connection và lỗi phát sinh trong service hoặc repository.
-
-## 12. Security Notes
-
-- Không đưa mật khẩu thật, API key hoặc secret vào repository.
-- Không commit file `.env` chứa thông tin nhạy cảm.
-- Chỉ sử dụng dữ liệu mẫu hoặc dữ liệu thử nghiệm trong Postman.
-- Xác nhận cấu hình môi trường trước khi chạy hoặc triển khai service.
