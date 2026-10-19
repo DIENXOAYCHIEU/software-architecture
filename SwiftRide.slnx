@@ -20,5 +20,6 @@
       <Project Path="src/MatchingService/MatchingService.Infrastructure/MatchingService.Infrastructure.csproj" />
     <Project Path="src/MatchingService/MatchingService.Tests/MatchingService.Tests.csproj" />
     </Folder>
+    <Project Path="src/ApiGateway/ApiGateway.csproj" />
   </Folder>
 </Solution>
