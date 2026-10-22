@@ -1,56 +1,62 @@
 # PaymentService
 
-PaymentService xu ly payment cho chuyen di, double-entry ledger, refund,
-idempotency, retry gateway va integration event qua RabbitMQ.
+PaymentService xử lý thanh toán cho chuyến đi, sổ cái kế toán kép (double-entry ledger), hoàn tiền, tính bất biến khi xử lý yêu cầu lặp lại (idempotency), thử lại khi gọi cổng thanh toán (gateway retry) và trao đổi sự kiện tích hợp thông qua RabbitMQ.
 
-## Chuc nang chinh
+## Chức năng chính
 
-- Tao payment voi `Idempotency-Key`.
-- Khong tao payment hoac charge gateway lan hai khi replay cung request.
-- Tu choi `409 Conflict` khi cung idempotency key nhung payload khac.
-- Theo doi trang thai `Pending`, `Succeeded`, `Failed` va `Refunded`.
-- Luu ledger debit/credit va dam bao tong debit bang tong credit.
-- Retry gateway tam thoi voi timeout, exponential backoff va jitter.
-- Ghi integration event vao transactional outbox.
-- Consume `RideCompleted` va phat `PaymentSettled`, `PaymentFailed`,
-  `PaymentRefunded`.
+- Tạo giao dịch thanh toán với `Idempotency-Key`.
+- Không tạo giao dịch thanh toán hoặc thực hiện charge gateway lần thứ hai khi nhận lại cùng một yêu cầu.
+- Trả về `409 Conflict` khi cùng một idempotency key nhưng nội dung payload khác nhau.
+- Theo dõi các trạng thái `Pending`, `Succeeded`, `Failed` và `Refunded`.
+- Lưu các bút toán ghi nợ (debit) và ghi có (credit), đồng thời đảm bảo tổng ghi nợ bằng tổng ghi có.
+- Thử lại các yêu cầu gateway khi xảy ra lỗi tạm thời, sử dụng timeout, exponential backoff và jitter.
+- Ghi sự kiện tích hợp vào transactional outbox.
+- Tiếp nhận sự kiện `RideCompleted` và phát ra các sự kiện `PaymentSettled`, `PaymentFailed`, `PaymentRefunded`.
 
-## Chay service
+## Chạy service
 
-Local API mac dinh:
+Địa chỉ API mặc định khi chạy cục bộ:
 
 ```text
 http://localhost:8084
 ```
 
-Docker:
+Chạy bằng Docker:
 
 ```powershell
 docker compose --env-file .env up --build -d rabbitmq payment_service
 ```
 
-PaymentService dung MySQL database rieng qua
-`ConnectionStrings__PaymentServiceDb`.
+PaymentService sử dụng một cơ sở dữ liệu MySQL riêng thông qua cấu hình `ConnectionStrings__PaymentServiceDb`.
 
-## Postman Collection
+## Bộ sưu tập Postman
 
-Import collection:
+Nhập collection:
 
 [PaymentService.postman_collection.json](./Postman/PaymentService.postman_collection.json)
 
-Collection co san cac request create, replay idempotency, payload conflict,
-get payment, get payments by trip, ledger va refund.
-Base URL mac dinh la `http://localhost:8084`.
+Collection có sẵn các request để:
 
-## API endpoints
+- Tạo payment.
+- Gửi lại yêu cầu để kiểm tra idempotency.
+- Kiểm tra xung đột payload.
+- Lấy thông tin payment.
+- Lấy danh sách payment theo chuyến đi (trip).
+- Xem sổ cái kế toán (ledger).
+- Hoàn tiền.
+- Kiểm tra các endpoint health và metrics của Giai đoạn 4.
 
-### Health check
+Base URL mặc định là `http://localhost:8084`.
+
+## Các API endpoint
+
+### 1. Kiểm tra trạng thái service (Health check)
 
 ```http
 GET /health
 ```
 
-Kiem tra service dang san sang xu ly request.
+Kiểm tra service đang chạy và sẵn sàng tiếp nhận các request cơ bản.
 
 Response `200 OK`:
 
@@ -61,7 +67,7 @@ Response `200 OK`:
 }
 ```
 
-### Tao payment
+### 2. Tạo payment
 
 ```http
 POST /payments
@@ -83,10 +89,9 @@ Request:
 }
 ```
 
-Chuc nang: tao payment cho mot trip, luu token demo o provider abstraction,
-goi gateway va tao ledger khi thanh cong.
+**Chức năng:** Tạo payment cho một chuyến đi (trip), lưu token thử nghiệm thông qua lớp trừu tượng hóa nhà cung cấp (provider abstraction), gọi cổng thanh toán (gateway) và tạo các bút toán ledger khi thanh toán thành công.
 
-Response lan dau `201 Created`:
+Response lần đầu `201 Created`:
 
 ```json
 {
@@ -105,36 +110,34 @@ Response lan dau `201 Created`:
 }
 ```
 
-### Replay payment idempotent
+### 3. Gửi lại yêu cầu payment (Idempotent replay)
 
 ```http
 POST /payments
 Idempotency-Key: payment-001
 ```
 
-Gui lai dung payload va dung key se tra `200 OK`, cung `id`, khong tao giao
-dich moi va khong charge gateway lan hai.
+Gửi lại đúng payload với cùng một key sẽ trả về `200 OK` và cùng giá trị `id`. Hệ thống không tạo giao dịch mới và không thực hiện charge gateway lần thứ hai.
 
-Neu cung key nhung thay doi payload, response la `409 Conflict`.
+Nếu sử dụng cùng một key nhưng thay đổi payload, response sẽ là `409 Conflict`.
 
-### Lay payment theo ID
+### 4. Lấy payment theo ID
 
 ```http
 GET /payments/{id}
 ```
 
-Chuc nang: lay chi tiet mot payment theo `paymentId`.
+**Chức năng:** Lấy thông tin chi tiết của một payment theo `paymentId`.
 
-Response `200 OK`: cung schema voi response tao payment.
+Response `200 OK` có cùng cấu trúc dữ liệu (schema) với response khi tạo payment.
 
-### Lay payments theo trip
+### 5. Lấy danh sách payment theo chuyến đi
 
 ```http
 GET /payments/by-trip/{tripId}
 ```
 
-Chuc nang: lay danh sach payment cua mot trip, dung de doi soat hoac kiem tra
-payment da thanh toan.
+**Chức năng:** Lấy danh sách payment của một chuyến đi, phục vụ việc đối soát hoặc kiểm tra chuyến đi đã được thanh toán hay chưa.
 
 Response `200 OK`:
 
@@ -155,14 +158,13 @@ Response `200 OK`:
 ]
 ```
 
-### Lay ledger cua payment
+### 6. Lấy sổ cái của payment
 
 ```http
 GET /payments/{id}/ledger
 ```
 
-Chuc nang: xem cac but toan debit/credit cua payment. Tong debit va credit
-phai bang nhau.
+**Chức năng:** Xem các bút toán ghi nợ (debit) và ghi có (credit) của payment. Tổng số tiền ghi nợ phải bằng tổng số tiền ghi có.
 
 Response `200 OK`:
 
@@ -187,55 +189,106 @@ Response `200 OK`:
 ]
 ```
 
-### Refund payment
+### 7. Hoàn tiền payment
 
 ```http
 POST /payments/{id}/refund
 Idempotency-Key: refund-001
 ```
 
-Chuc nang: hoan tien mot payment `Succeeded` va phat event
-`PaymentRefunded`.
+**Chức năng:** Hoàn tiền cho một payment có trạng thái `Succeeded` và phát ra sự kiện `PaymentRefunded`.
 
-Response `200 OK`: payment voi `status` la `Refunded`.
+Response `200 OK`: payment có trạng thái `status` là `Refunded`.
 
-Replay cung refund key se tra ket qua idempotent va khong goi refund gateway
-lan hai. Dung refund key khac cho payment da refund se tra `409 Conflict`.
+Nếu gửi lại yêu cầu hoàn tiền với cùng một refund key, hệ thống trả về kết quả idempotent và không gọi gateway hoàn tiền lần thứ hai.
 
-## Error responses
+Nếu sử dụng refund key khác cho một payment đã được hoàn tiền, hệ thống sẽ trả về `409 Conflict`.
+
+### 8. Kiểm tra tiến trình còn hoạt động (Liveness check)
+
+```http
+GET /health/live
+```
+
+Kiểm tra tiến trình PaymentService còn đang hoạt động hay không. Endpoint này không yêu cầu cơ sở dữ liệu phải sẵn sàng.
+
+Response `200 OK`:
 
 ```json
 {
-  "error": "Idempotency-Key da duoc dung cho payload khac."
+  "status": "live",
+  "service": "payment"
 }
 ```
 
-Ma loi thuong gap:
+### 9. Kiểm tra khả năng sẵn sàng (Readiness check)
 
-- `400`: thieu header hoac request khong hop le.
-- `404`: khong tim thay payment.
-- `409`: state transition hoac idempotency conflict.
-- `502`: gateway tu choi request.
+```http
+GET /health/ready
+```
 
-## Cau hinh
+Kiểm tra PaymentService đã kết nối thành công tới MySQL hay chưa.
 
-Local dung `appsettings.Development.json` hoac environment variables.
-Docker dung file `.env` tao tu `.env.example`. Khong commit file `.env`,
-payment token that, database password hoac JWT secret.
+Response khi service sẵn sàng `200 OK`:
 
-RabbitMQ dung exchange `swiftride.events`; queue PaymentService mac dinh la
-`payment.events`.
+```json
+{
+  "status": "ready",
+  "service": "payment"
+}
+```
 
-## Production concerns
+Nếu không thể kết nối tới cơ sở dữ liệu, endpoint trả về `503 Service Unavailable`.
 
-- Gateway ho tro JWT symmetric cho development va OIDC authority qua
-  `JWT_AUTHORITY` khi deploy production.
-- OpenTelemetry trace/metrics duoc expose tai `GET /metrics`.
-- `GET /health/live` la liveness check; `GET /health/ready` kiem tra ket noi
-  den Payment MySQL.
-- Message loi cua Payment va Trip consumer duoc day vao dead-letter queue
-  (`payment.events.dlq`, `trip.events.dlq`) thay vi requeue vo han.
-- Audit trail duoc luu trong bang `audit_trails`, gom payment, action, status,
-  correlation ID va timestamp.
-- Secret production chi dua qua environment/secret manager, khong ghi vao
-  source code hoac `.env` commit vao Git.
+### 10. Chỉ số Prometheus (Prometheus metrics)
+
+```http
+GET /metrics
+```
+
+Trả về các chỉ số theo định dạng Prometheus, bao gồm chỉ số của ASP.NET Core, runtime và các chỉ số thanh toán tùy chỉnh:
+
+- `payment.created`: Số lượng payment được tạo.
+- `payment.refunded`: Số lượng payment được hoàn tiền.
+- `payment.gateway.failures`: Số lần gateway gặp lỗi.
+
+## Các phản hồi lỗi (Error responses)
+
+Ví dụ phản hồi lỗi:
+
+```json
+{
+  "error": "Idempotency-Key đã được sử dụng cho một payload khác."
+}
+```
+
+Các mã lỗi thường gặp:
+
+- `400 Bad Request`: Thiếu header bắt buộc hoặc request không hợp lệ.
+- `404 Not Found`: Không tìm thấy payment.
+- `409 Conflict`: Xung đột trong quá trình chuyển đổi trạng thái hoặc xung đột idempotency.
+- `502 Bad Gateway`: Gateway từ chối request hoặc trả về lỗi được ánh xạ thành mã này.
+
+## Cấu hình
+
+Khi chạy cục bộ, service sử dụng `appsettings.Development.json` hoặc các biến môi trường (environment variables).
+
+Khi chạy bằng Docker, service sử dụng file `.env` được tạo từ `.env.example`.
+
+**Không commit các thông tin nhạy cảm vào Git**, bao gồm:
+
+- File `.env`.
+- Payment token thật.
+- Mật khẩu cơ sở dữ liệu.
+- JWT secret.
+
+RabbitMQ sử dụng exchange `swiftride.events`. Queue mặc định của PaymentService là `payment.events`.
+
+## Các vấn đề cần lưu ý khi triển khai production
+
+- Gateway hỗ trợ JWT đối xứng (symmetric JWT) trong môi trường development và hỗ trợ OIDC authority thông qua biến `JWT_AUTHORITY` khi triển khai production.
+- Trace và metrics của OpenTelemetry được cung cấp thông qua endpoint `GET /metrics`.
+- `GET /health/live` dùng để kiểm tra tiến trình còn hoạt động; `GET /health/ready` kiểm tra khả năng kết nối tới cơ sở dữ liệu MySQL của PaymentService.
+- Các thông điệp lỗi từ consumer của Payment và Trip được chuyển vào dead-letter queue (`payment.events.dlq`, `trip.events.dlq`) thay vì được đưa vào hàng đợi để xử lý lại vô hạn.
+- Nhật ký kiểm toán (audit trail) được lưu trong bảng `audit_trails`, bao gồm thông tin payment, hành động, trạng thái, correlation ID và dấu thời gian (timestamp).
+- Secret dùng trong production chỉ được truyền thông qua biến môi trường hoặc hệ thống quản lý bí mật (secret manager). Không ghi secret trực tiếp vào mã nguồn hoặc commit file `.env` lên Git.
