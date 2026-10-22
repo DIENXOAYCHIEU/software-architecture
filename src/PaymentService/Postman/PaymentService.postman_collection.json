@@ -230,6 +230,72 @@
         },
         "description": "Expected: 200 OK, cùng payment ID và không refund gateway lần hai."
       }
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{payment_url}}/health",
+          "host": [
+            "{{payment_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Kiểm tra service đang chạy."
+      }
+    },
+    {
+      "name": "Liveness",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{payment_url}}/health/live",
+          "host": [
+            "{{payment_url}}"
+          ],
+          "path": [
+            "health",
+            "live"
+          ]
+        },
+        "description": "Kiểm tra process còn sống."
+      }
+    },
+    {
+      "name": "Readiness",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{payment_url}}/health/ready",
+          "host": [
+            "{{payment_url}}"
+          ],
+          "path": [
+            "health",
+            "ready"
+          ]
+        },
+        "description": "Kiểm tra PaymentService đã kết nối được MySQL."
+      }
+    },
+    {
+      "name": "Prometheus Metrics",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{payment_url}}/metrics",
+          "host": [
+            "{{payment_url}}"
+          ],
+          "path": [
+            "metrics"
+          ]
+        },
+        "description": "Đọc ASP.NET Core, runtime và custom payment metrics."
+      }
     }
   ]
 }

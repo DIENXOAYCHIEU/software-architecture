@@ -9,6 +9,7 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<ProcessedIntegrationMessage> ProcessedIntegrationMessages => Set<ProcessedIntegrationMessage>();
+    public DbSet<AuditTrail> AuditTrails => Set<AuditTrail>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -55,6 +56,17 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
         {
             e.ToTable("processed_integration_messages");
             e.HasKey(x => x.MessageId);
+        });
+        b.Entity<AuditTrail>(e =>
+        {
+            e.ToTable("audit_trails");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Action).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Details).HasMaxLength(1000);
+            e.Property(x => x.CorrelationId).HasMaxLength(100);
+            e.HasIndex(x => x.PaymentId);
+            e.HasIndex(x => x.OccurredAtUtc);
         });
     }
 }

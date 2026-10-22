@@ -19,6 +19,8 @@ public sealed class RabbitMqOptions
     public string Password { get; init; } = "guest";
     public string Exchange { get; init; } = "swiftride.events";
     public string Queue { get; init; } = "trip.events";
+    public string DeadLetterExchange { get; init; } = "swiftride.events.dlx";
+    public string DeadLetterQueue { get; init; } = "trip.events.dlq";
 }
 
 public sealed class OutboxMessage
@@ -106,7 +108,15 @@ public sealed class TripPaymentConsumer(
     {
         var channel = rabbit.CreateChannel();
         channel.ExchangeDeclare(options.Exchange, ExchangeType.Topic, durable: true);
-        channel.QueueDeclare(options.Queue, durable: true, exclusive: false, autoDelete: false);
+        channel.ExchangeDeclare(options.DeadLetterExchange, ExchangeType.Topic, durable: true);
+        channel.QueueDeclare(options.DeadLetterQueue, durable: true, exclusive: false, autoDelete: false);
+        channel.QueueBind(options.DeadLetterQueue, options.DeadLetterExchange, "#");
+        var queueArguments = new Dictionary<string, object>
+        {
+            ["x-dead-letter-exchange"] = options.DeadLetterExchange,
+            ["x-dead-letter-routing-key"] = options.DeadLetterQueue
+        };
+        channel.QueueDeclare(options.Queue, durable: true, exclusive: false, autoDelete: false, queueArguments);
         channel.QueueBind(options.Queue, options.Exchange, "PaymentSettled");
         channel.QueueBind(options.Queue, options.Exchange, "PaymentFailed");
         channel.QueueBind(options.Queue, options.Exchange, "PaymentRefunded");
@@ -144,7 +154,7 @@ public sealed class TripPaymentConsumer(
             catch (Exception ex)
             {
                 log.LogError(ex, "Trip payment event failed");
-                channel.BasicNack(args.DeliveryTag, false, true);
+                channel.BasicNack(args.DeliveryTag, false, false);
             }
         };
         channel.BasicConsume(options.Queue, false, consumer);

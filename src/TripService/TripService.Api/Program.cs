@@ -28,7 +28,6 @@ builder.Services.AddInfrastructureIntegration(builder.Configuration.GetSection("
 
 var app = builder.Build();
 
-app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 

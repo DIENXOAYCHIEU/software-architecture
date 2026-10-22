@@ -16,6 +16,32 @@ services:
     networks:
       - swiftride-network
 
+  api_gateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      Jwt__Key: ${JWT_SECRET_KEY}
+      Jwt__Issuer: AuthService
+      Jwt__Audience: AuthServiceUsers
+      Jwt__Authority: ${JWT_AUTHORITY:-}
+      Jwt__AccessTokenExpirationMinutes: "10"
+      Jwt__RefreshTokenExpirationDays: "60"
+    container_name: api_gateway
+    ports:
+      - "5000:5000"
+    depends_on:
+      auth_service:
+        condition: service_started
+      trip_service:
+        condition: service_started
+      payment_service:
+        condition: service_started
+    networks:
+      - swiftride-network
+
   auth_service:
     build:
       context: .
@@ -25,10 +51,11 @@ services:
       ASPNETCORE_URLS: http://+:8081
       ConnectionStrings__AuthServiceDb: ${AUTH_DB_CONNECTION}
       Jwt__Key: ${JWT_SECRET_KEY}
-      Jwt__Issuer: "AuthService"
-      Audience: "AuthServiceUsers"
-      AccessTokenExpirationMinutes: "10"
-      RefreshTokenExpirationDays: "60"
+      Jwt__Issuer: AuthService
+      Jwt__Audience: AuthServiceUsers
+      Jwt__Authority: ${JWT_AUTHORITY:-}
+      Jwt__AccessTokenExpirationMinutes: "10"
+      Jwt__RefreshTokenExpirationDays: "60"
     container_name: auth_service
     ports:
       - "8081:8081"

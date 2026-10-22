@@ -16,6 +16,8 @@ public static class DependencyInjection
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IPaymentProcessorFactory, PaymentProcessorFactory>();
         services.AddScoped<IEventPublisher, OutboxEventPublisher>();
+        services.AddScoped<IAuditTrailWriter, AuditTrailWriter>();
+        services.AddSingleton<PaymentMetrics>();
         services.AddSingleton<IPaymentTokenProvider, InMemoryPaymentTokenProvider>();
         services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
         services.AddSingleton(options);

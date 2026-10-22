@@ -36,6 +36,8 @@ public sealed class RabbitMqOptions
     public string Password { get; init; } = "guest";
     public string Exchange { get; init; } = "swiftride.events";
     public string Queue { get; init; } = "payment.events";
+    public string DeadLetterExchange { get; init; } = "swiftride.events.dlx";
+    public string DeadLetterQueue { get; init; } = "payment.events.dlq";
 }
 
 public sealed class RabbitMqConnection(RabbitMqOptions options) : IDisposable
@@ -131,7 +133,15 @@ public sealed class PaymentIntegrationConsumer(
     {
         var channel = rabbit.CreateChannel();
         channel.ExchangeDeclare(options.Exchange, ExchangeType.Topic, durable: true);
-        channel.QueueDeclare(options.Queue, durable: true, exclusive: false, autoDelete: false);
+        channel.ExchangeDeclare(options.DeadLetterExchange, ExchangeType.Topic, durable: true);
+        channel.QueueDeclare(options.DeadLetterQueue, durable: true, exclusive: false, autoDelete: false);
+        channel.QueueBind(options.DeadLetterQueue, options.DeadLetterExchange, "#");
+        var queueArguments = new Dictionary<string, object>
+        {
+            ["x-dead-letter-exchange"] = options.DeadLetterExchange,
+            ["x-dead-letter-routing-key"] = options.DeadLetterQueue
+        };
+        channel.QueueDeclare(options.Queue, durable: true, exclusive: false, autoDelete: false, queueArguments);
         channel.QueueBind(options.Queue, options.Exchange, "RideCompleted");
         channel.QueueBind(options.Queue, options.Exchange, "TripCompensationRequested");
         var consumer = new AsyncEventingBasicConsumer(channel);
@@ -162,7 +172,7 @@ public sealed class PaymentIntegrationConsumer(
             catch (Exception ex)
             {
                 log.LogError(ex, "Payment integration message failed");
-                channel.BasicNack(args.DeliveryTag, false, requeue: true);
+                channel.BasicNack(args.DeliveryTag, false, requeue: false);
             }
         };
         channel.BasicConsume(options.Queue, autoAck: false, consumer);

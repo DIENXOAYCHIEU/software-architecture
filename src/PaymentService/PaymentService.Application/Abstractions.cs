@@ -33,6 +33,12 @@ public interface ICorrelationIdAccessor
     string? Current { get; set; }
 }
 
+public interface IAuditTrailWriter
+{
+    Task RecordAsync(Guid paymentId, string action, PaymentStatus status, string? details,
+        string? correlationId, CancellationToken ct);
+}
+
 /// <summary>Publisher sự kiện (PaymentSettled, PaymentFailed...). Sau này thay bằng RabbitMQ/MassTransit.</summary>
 public interface IEventPublisher
 {

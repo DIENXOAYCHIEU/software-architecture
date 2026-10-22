@@ -10,7 +10,9 @@ public class PaymentAppService(
     ILogger<PaymentAppService> log,
     IPaymentTokenProvider tokens,
     ReliabilityOptions reliability,
-    ICorrelationIdAccessor correlation)
+    ICorrelationIdAccessor correlation,
+    IAuditTrailWriter? audit = null,
+    PaymentMetrics? metrics = null)
 {
     /// <returns>(payment, created). created=false nghĩa là request lặp lại (idempotent replay).</returns>
     public async Task<(Payment Payment, bool Created)> CreateAsync(
@@ -59,6 +61,11 @@ public class PaymentAppService(
         }
 
         await ProcessPaymentAsync(payment, req.Method, req.PaymentToken, ct);
+        metrics?.PaymentCreated(payment.Status.ToString());
+        if (audit is not null)
+            await audit.RecordAsync(payment.Id, "PaymentCreated", payment.Status, null,
+                correlation.Current, ct);
+        await repo.SaveChangesAsync(ct);
 
         return (payment, true);
     }
@@ -131,6 +138,7 @@ public class PaymentAppService(
         }
 
         var error = result?.Error ?? "Thanh toán thất bại.";
+        metrics?.GatewayFailure(result?.FailureKind.ToString() ?? "Unknown");
         if (result?.FailureKind == GatewayFailureKind.Transient &&
             payment.AttemptCount < reliability.MaxTotalAttempts)
         {
@@ -202,6 +210,10 @@ public class PaymentAppService(
 
         payment.Refund(refundIdempotencyKey); // ném InvalidOperationException nếu chưa Succeeded -> 409
         await events.PublishAsync("PaymentRefunded", new { PaymentId = payment.Id, payment.TripId }, ct);
+        if (audit is not null)
+            await audit.RecordAsync(payment.Id, "PaymentRefunded", payment.Status, null,
+                correlation.Current, ct);
+        metrics?.PaymentRefunded();
         await repo.SaveChangesAsync(ct);
         return payment;
     }

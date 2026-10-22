@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using PaymentService.Application;
 using PaymentService.Infrastructure;
 
@@ -7,6 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+builder.Services.AddMetrics();
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddMeter(PaymentMetrics.MeterName)
+        .AddPrometheusExporter())
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddSource("SwiftRide.PaymentService"));
+builder.Services.AddHealthChecks();
 
 builder.Services
     .AddApplication()
@@ -26,6 +40,7 @@ app.Services.InitializePaymentDatabase();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+app.MapPrometheusScrapingEndpoint("/metrics");
 
 app.Use(async (ctx, next) =>
 {
@@ -60,6 +75,11 @@ app.Use(async (ctx, next) =>
 });
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "payment" }));
+app.MapGet("/health/live", () => Results.Ok(new { status = "live", service = "payment" }));
+app.MapGet("/health/ready", async (PaymentDbContext db, CancellationToken ct) =>
+    await db.Database.CanConnectAsync(ct)
+        ? Results.Ok(new { status = "ready", service = "payment" })
+        : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
 
 var g = app.MapGroup("/payments").WithTags("Payments");
 

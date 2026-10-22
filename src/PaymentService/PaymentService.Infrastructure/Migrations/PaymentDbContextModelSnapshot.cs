@@ -128,6 +128,47 @@ namespace PaymentService.Infrastructure.Migrations
                     b.ToTable("payments", (string)null);
                 });
 
+            modelBuilder.Entity("PaymentService.Infrastructure.AuditTrail", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("audit_trails", (string)null);
+                });
+
             modelBuilder.Entity("PaymentService.Infrastructure.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
