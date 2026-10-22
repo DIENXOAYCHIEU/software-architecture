@@ -1,15 +1,20 @@
-version: '3.8'
-
 services:
-
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   container_name: swiftride_rabbitmq
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #   networks:
-  #     - swiftride-network
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: swiftride_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - swiftride-network
 
   api_gateway:
     build:
@@ -19,20 +24,23 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5000
       Jwt__Key: ${JWT_SECRET_KEY}
-      Jwt__Issuer: "AuthService"
-      Jwt__Audience: "AuthServiceUsers"
+      Jwt__Issuer: AuthService
+      Jwt__Audience: AuthServiceUsers
+      Jwt__Authority: ${JWT_AUTHORITY:-}
       Jwt__AccessTokenExpirationMinutes: "10"
       Jwt__RefreshTokenExpirationDays: "60"
     container_name: api_gateway
     ports:
       - "5000:5000"
+    depends_on:
+      auth_service:
+        condition: service_started
+      trip_service:
+        condition: service_started
+      payment_service:
+        condition: service_started
     networks:
       - swiftride-network
-    depends_on:
-      - trip_service
-      - auth_service
-      # - matching_service
-      # - payment_service
 
   auth_service:
     build:
@@ -43,11 +51,14 @@ services:
       ASPNETCORE_URLS: http://+:8081
       ConnectionStrings__AuthServiceDb: ${AUTH_DB_CONNECTION}
       Jwt__Key: ${JWT_SECRET_KEY}
-      Jwt__Issuer: "AuthService"
-      Jwt__Audience: "AuthServiceUsers"
+      Jwt__Issuer: AuthService
+      Jwt__Audience: AuthServiceUsers
+      Jwt__Authority: ${JWT_AUTHORITY:-}
       Jwt__AccessTokenExpirationMinutes: "10"
       Jwt__RefreshTokenExpirationDays: "60"
     container_name: auth_service
+    ports:
+      - "8081:8081"
     networks:
       - swiftride-network
 
@@ -59,34 +70,54 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8082
       ConnectionStrings__TripServiceDb: ${TRIP_DB_CONNECTION}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
     container_name: trip_service
+    ports:
+      - "8082:8082"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - swiftride-network
 
-  # matching_service:
-  #   build:
-  #     context: .
-  #     dockerfile: src/MatchingService/MatchingService.Api/Dockerfile
-  #   environment:
-  #     ASPNETCORE_ENVIRONMENT: Development
-  #     ASPNETCORE_URLS: http://+:8083
-  #     ConnectionStrings__PaymentServiceDb: ${MATCHING_DB_CONNECTION}
-  #   container_name: matching_service
-  #   networks:
-  #     - swiftride-network
+  matching_service:
+    build:
+      context: .
+      dockerfile: src/MatchingService/MatchingService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8083
+      ConnectionStrings__MatchingServiceDb: ${MATCHING_DB_CONNECTION}
+      OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY:-}
+    container_name: matching_service
+    ports:
+      - "8083:8083"
+    networks:
+      - swiftride-network
 
-  # payment_service:
-  #   build:
-  #     context: .
-  #     dockerfile: src/PaymentService/PaymentService.Api/Dockerfile
-  #   environment:
-  #     ASPNETCORE_ENVIRONMENT: Development
-  #     ASPNETCORE_URLS: http://+:8084
-  #     ConnectionStrings__PaymentServiceDb: ${PAYMENT_DB_CONNECTION}
-  #     OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY}
-  #   container_name: payment_service
-  #   networks:
-  #     - swiftride-network
+  payment_service:
+    build:
+      context: .
+      dockerfile: src/PaymentService/PaymentService.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8084
+      ConnectionStrings__PaymentServiceDb: ${PAYMENT_DB_CONNECTION}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+    container_name: payment_service
+    ports:
+      - "8084:8084"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swiftride-network
 
 networks:
   swiftride-network:

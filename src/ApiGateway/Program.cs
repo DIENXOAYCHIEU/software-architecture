@@ -7,7 +7,7 @@ using Yarp.ReverseProxy.Transforms;
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+var authority = jwtSettings["Authority"];
 
 builder.Services.AddAuthentication(options =>
 {
@@ -16,16 +16,24 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    if (!string.IsNullOrWhiteSpace(authority))
+    {
+        options.Authority = authority;
+        options.RequireHttpsMetadata = builder.Environment.IsProduction();
+    }
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
+        ValidateIssuerSigningKey = string.IsNullOrWhiteSpace(authority),
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         NameClaimType = "name",
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = string.IsNullOrWhiteSpace(authority)
+            ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+            : null
     };
 });
 
@@ -41,10 +49,10 @@ builder.Services.AddReverseProxy()
         builderContext.AddRequestTransform(transformContext =>
         {
             var user = transformContext.HttpContext.User;
-            
+
             if (user.Identity?.IsAuthenticated == true)
             {
-                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                              ?? user.FindFirst("id")?.Value;
 
                 if (!string.IsNullOrEmpty(userId))
@@ -53,7 +61,7 @@ builder.Services.AddReverseProxy()
                     transformContext.ProxyRequest.Headers.TryAddWithoutValidation("X-User-Id", userId);
                 }
             }
-            
+
             return ValueTask.CompletedTask;
         });
     });

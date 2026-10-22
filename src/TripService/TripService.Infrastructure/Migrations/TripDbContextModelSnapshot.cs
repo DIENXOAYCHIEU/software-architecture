@@ -54,6 +54,45 @@ namespace TripService.Infrastructure.Migrations
                     b.ToTable("Trips");
                 });
 
+            modelBuilder.Entity("TripService.Infrastructure.Integration.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OutboxMessages");
+                });
+
+            modelBuilder.Entity("TripService.Infrastructure.Integration.ProcessedIntegrationMessage", b =>
+                {
+                    b.Property<string>("MessageId")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("ProcessedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("MessageId");
+
+                    b.ToTable("ProcessedIntegrationMessages");
+                });
+
             modelBuilder.Entity("TripService.Domain.Entities.Trip", b =>
                 {
                     b.OwnsOne("TripService.Domain.ValueObjects.Location", "EndLocation", b1 =>
