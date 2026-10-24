@@ -21,4 +21,7 @@
     <Project Path="src/MatchingService/MatchingService.Tests/MatchingService.Tests.csproj" />
     </Folder>
   </Folder>
+  <Folder Name="/src/TripService/">
+    <Project Path="src/TripService/TripService.Tests/TripService.Tests.csproj" />
+  </Folder>
 </Solution>

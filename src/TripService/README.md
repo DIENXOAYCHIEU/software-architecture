@@ -150,18 +150,54 @@ Body mẫu:
   }
 }
 ```
-
 Thay `riderId` bằng ID hợp lệ nếu hệ thống yêu cầu.
 
+**Response — `201 Created`**
+
+```json
+{
+  "id": "dc25f55e-49c2-42dd-9aa6-96259886e89f",
+  "riderId": "11111111-1111-1111-1111-111111111111",
+  "status": 0
+}
+```
+
 ### 6.2. Get Trip by ID
+
+**Request**
 
 ```http
 GET /api/Trip/{tripId}
 ```
-
 Thay `{tripId}` bằng ID chuyến đi thực tế đã được tạo.
 
+**Response — `200 OK`**
+
+```json
+{
+  "id": "dc25f55e-49c2-42dd-9aa6-96259886e89f",
+  "riderId": "11111111-1111-1111-1111-111111111111",
+  "driverId": null,
+  "startLocation": {
+    "latitude": 10.7769,
+    "longitude": 106.7009,
+    "address": "Quan 1"
+  },
+  "endLocation": {
+    "latitude": 10.8231,
+    "longitude": 106.6297,
+    "address": "San bay Tan Son Nhat"
+  },
+  "amountToPay": null,
+  "created": "2026-10-24T09:00:00Z",
+  "updated": "2026-10-24T09:00:00Z",
+  "status": 0
+}
+```
+
 ### 6.3. Assign Driver
+
+**Request**
 
 ```http
 POST /api/Trip/{tripId}/driver-accept
@@ -176,7 +212,19 @@ Body là một GUID được gửi dưới dạng chuỗi JSON:
 
 Thay GUID mẫu bằng ID tài xế hợp lệ theo dữ liệu và quy tắc của hệ thống.
 
+**Response — `201 Created`**
+
+```json
+{
+  "id": "dc25f55e-49c2-42dd-9aa6-96259886e89f",
+  "driverId": "22222222-2222-2222-2222-222222222222",
+  "status": 1
+}
+```
+
 ### 6.4. Pickup
+
+**Request**
 
 ```http
 POST /api/Trip/{tripId}/pickup
@@ -184,13 +232,36 @@ POST /api/Trip/{tripId}/pickup
 
 Endpoint này cập nhật trạng thái chuyến đi khi đón khách. Không cần gửi request body theo controller hiện tại.
 
+**Response — `201 Created`**
+
+```json
+{
+  "id": "dc25f55e-49c2-42dd-9aa6-96259886e89f",
+  "driverId": "22222222-2222-2222-2222-222222222222",
+  "status": 2
+}
+```
+
+### 8.5. Dropoff
 ### 6.5. Dropoff
+
+**Request**
 
 ```http
 POST /api/Trip/{tripId}/dropoff
 ```
 
 Endpoint này cập nhật trạng thái chuyến đi khi trả khách. Không cần gửi request body theo controller hiện tại.
+
+**Response — `201 Created`**
+
+```json
+{
+  "id": "dc25f55e-49c2-42dd-9aa6-96259886e89f",
+  "driverId": "22222222-2222-2222-2222-222222222222",
+  "status": 3
+}
+```
 
 ## 7. Postman Collection
 
