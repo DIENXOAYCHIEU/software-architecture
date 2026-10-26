@@ -117,20 +117,16 @@ Tạo file `.env` từ `.env.example`, sau đó cấu hình JWT, connection stri
 docker compose up --build -d
 ```
 
-Kiểm tra trạng thái container:
-
 ```bash
-docker compose ps
+docker compose up
 ```
 
-Xem log API Gateway:
-
-```bash
-docker compose logs -f api_gateway
-```
-
-Tên service trong các lệnh phải khớp với cấu hình thực tế trong `docker-compose.yml`.
 ## PaymentService
 
 - [PaymentService README](./src/PaymentService/README.md)
 - [PaymentService Postman Collection](./src/PaymentService/Postman/PaymentService.postman_collection.json)
+
+## TripService
+
+- [TripService README](./src/TripService/README.md)
+- [TripService Postman Collection](./src/TripService/Postman/TripService.postman_collection.json)
