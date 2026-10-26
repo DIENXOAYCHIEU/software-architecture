@@ -22,4 +22,7 @@
     </Folder>
     <Project Path="src/ApiGateway/ApiGateway.csproj" />
   </Folder>
+  <Folder Name="/src/TripService/">
+    <Project Path="src/TripService/TripService.Tests/TripService.Tests.csproj" />
+  </Folder>
 </Solution>
