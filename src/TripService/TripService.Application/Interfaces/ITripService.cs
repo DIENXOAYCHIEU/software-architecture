@@ -9,4 +9,5 @@ public interface ITripService{
     Task<AssignedTripResponse> AssignDriverAsync(Guid tripId, Guid driverId);
     Task<AssignedTripResponse> UpdateStatusToDropped(Guid tripId);
     Task<AssignedTripResponse> UpdateStatusToPicked(Guid tripId);
+    Task<AssignedTripResponse> UpdatePaymentStatusAsync(Guid tripId, bool paid);
 }

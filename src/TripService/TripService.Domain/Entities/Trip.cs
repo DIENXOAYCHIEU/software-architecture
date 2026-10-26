@@ -57,4 +57,25 @@ public class Trip{
 		Status = TripStatus.DROPPED;
 		Updated = DateTime.UtcNow;
 	}
+
+	public void MarkPaymentPending(){
+		if(Status != TripStatus.DROPPED && Status != TripStatus.PAYMENT_PENDING)
+			throw new InvalidTripException("Chuyến đi chưa sẵn sàng thanh toán");
+		Status = TripStatus.PAYMENT_PENDING;
+		Updated = DateTime.UtcNow;
+	}
+
+	public void MarkPaid(){
+		if(Status != TripStatus.DROPPED && Status != TripStatus.PAYMENT_PENDING)
+			throw new InvalidTripException("Chuyến đi chưa sẵn sàng hoàn tất thanh toán");
+		Status = TripStatus.PAID;
+		Updated = DateTime.UtcNow;
+	}
+
+	public void Cancel(){
+		if(Status == TripStatus.PAID || Status == TripStatus.CANCELLED)
+			throw new InvalidTripException("Không thể hủy chuyến ở trạng thái hiện tại");
+		Status = TripStatus.CANCELLED;
+		Updated = DateTime.UtcNow;
+	}
 }

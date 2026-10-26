@@ -33,10 +33,21 @@ public interface ICorrelationIdAccessor
     string? Current { get; set; }
 }
 
+public interface IAuditTrailWriter
+{
+    Task RecordAsync(Guid paymentId, string action, PaymentStatus status, string? details,
+        string? correlationId, CancellationToken ct);
+}
+
 /// <summary>Publisher sự kiện (PaymentSettled, PaymentFailed...). Sau này thay bằng RabbitMQ/MassTransit.</summary>
 public interface IEventPublisher
 {
     Task PublishAsync(string eventName, object payload, CancellationToken ct = default);
+}
+
+public interface IIntegrationEventConsumer
+{
+    Task HandleAsync(string eventName, string payload, CancellationToken ct);
 }
 
 /// <summary>Repository pattern: Application không biết gì về EF Core / MySQL.</summary>

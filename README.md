@@ -130,3 +130,7 @@ docker compose logs -f api_gateway
 ```
 
 Tên service trong các lệnh phải khớp với cấu hình thực tế trong `docker-compose.yml`.
+## PaymentService
+
+- [PaymentService README](./src/PaymentService/README.md)
+- [PaymentService Postman Collection](./src/PaymentService/Postman/PaymentService.postman_collection.json)
