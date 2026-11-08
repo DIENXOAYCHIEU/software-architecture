@@ -2,7 +2,7 @@
 using MatchingService.Application.Services;
 using MatchingService.Infrastructure;
 using MatchingService.Application.Strategies;
-
+using MatchingService.Infrastructure.Integration;
 
 using MatchingAppService = MatchingService.Application.Services.MatchingService;
 
@@ -22,6 +22,12 @@ builder.Services.AddScoped<IPricingStrategy,NormalPricingStrategy>();
 // Infrastructure
 builder.Services.AddInfrastructureServices(
     builder.Configuration);
+
+var rabbitOptions =
+    builder.Configuration.GetSection("RabbitMq")
+        .Get<RabbitMqOptions>() ?? new RabbitMqOptions();
+
+builder.Services.AddMatchingInfrastructureIntegration(rabbitOptions);
 
 var app = builder.Build();
 

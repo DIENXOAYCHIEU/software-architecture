@@ -1,3 +1,4 @@
+
 using MatchingService.Application.Interfaces;
 using MatchingService.Domain.Entities;
 using MatchingService.Infrastructure.Persistence;
@@ -19,9 +20,9 @@ public class MatchingRepository : IMatchingRepository
         MatchingRequest matchingRequest,
         CancellationToken cancellationToken = default)
     {
-        // Sử dụng trực tiếp qua _context.MatchingRequests
-        await _context.MatchingRequests.AddAsync(matchingRequest, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.MatchingRequests.AddAsync(
+            matchingRequest,
+            cancellationToken);
     }
 
     public async Task<MatchingRequest?> GetByIdAsync(
@@ -29,7 +30,9 @@ public class MatchingRepository : IMatchingRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.MatchingRequests
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.Id == id,
+                cancellationToken);
     }
 
     public async Task<MatchingRequest?> GetByTripIdAsync(
@@ -37,15 +40,18 @@ public class MatchingRepository : IMatchingRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.MatchingRequests
-            .FirstOrDefaultAsync(x => x.TripId == tripId, cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.TripId == tripId,
+                cancellationToken);
     }
 
-    public async Task UpdateAsync(
+    public Task UpdateAsync(
         MatchingRequest matchingRequest,
         CancellationToken cancellationToken = default)
     {
         _context.MatchingRequests.Update(matchingRequest);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        return Task.CompletedTask;
     }
 
     public async Task AddAttemptAsync(
@@ -55,8 +61,6 @@ public class MatchingRepository : IMatchingRepository
         await _context.MatchingAttempts.AddAsync(
             attempt,
             cancellationToken);
-
-        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<MatchingAttempt?> GetAttemptAsync(
@@ -74,9 +78,9 @@ public class MatchingRepository : IMatchingRepository
     }
 
     public async Task<List<MatchingAttempt>>
-    GetAttemptsByMatchingIdAsync(
-        Guid matchingId,
-        CancellationToken cancellationToken = default)
+        GetAttemptsByMatchingIdAsync(
+            Guid matchingId,
+            CancellationToken cancellationToken = default)
     {
         return await _context.MatchingAttempts
             .Where(x => x.MatchingRequestId == matchingId)
@@ -84,11 +88,12 @@ public class MatchingRepository : IMatchingRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task UpdateAttemptAsync(
+    public Task UpdateAttemptAsync(
         MatchingAttempt attempt,
         CancellationToken cancellationToken = default)
     {
         _context.MatchingAttempts.Update(attempt);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        return Task.CompletedTask;
     }
 }
