@@ -143,7 +143,7 @@ public sealed class TripPaymentConsumer(
                     ?? throw new InvalidOperationException("Trip for payment event was not found.");
                 if (envelope.EventName == "PaymentSettled") trip.MarkPaid();
                 else if (envelope.EventName == "PaymentFailed") trip.MarkPaymentPending();
-                else trip.Cancel();
+                else if (envelope.EventName == "PaymentRefunded") trip.Cancel();
                 db.ProcessedIntegrationMessages.Add(new ProcessedIntegrationMessage
                 {
                     MessageId = envelope.MessageId

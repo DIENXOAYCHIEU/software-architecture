@@ -19,6 +19,10 @@
       "value": "22222222-2222-2222-2222-222222222222"
     },
     {
+      "key": "user_id",
+      "value": "22222222-2222-2222-2222-222222222222"
+    },
+    {
       "key": "payment_id",
       "value": ""
     }
@@ -40,6 +44,10 @@
           {
             "key": "X-Correlation-ID",
             "value": "postman-correlation-001"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
           }
         ],
         "body": {
@@ -84,6 +92,10 @@
           {
             "key": "Idempotency-Key",
             "value": "postman-payment-001"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
           }
         ],
         "body": {
@@ -114,6 +126,10 @@
           {
             "key": "Idempotency-Key",
             "value": "postman-payment-001"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
           }
         ],
         "body": {
@@ -136,6 +152,12 @@
       "name": "Get Payment by ID",
       "request": {
         "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
+          }
+        ],
         "url": {
           "raw": "{{payment_url}}/payments/{{payment_id}}",
           "host": [
@@ -152,6 +174,12 @@
       "name": "Get Payments by Trip",
       "request": {
         "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
+          }
+        ],
         "url": {
           "raw": "{{payment_url}}/payments/by-trip/{{trip_id}}",
           "host": [
@@ -169,6 +197,12 @@
       "name": "Get Payment Ledger",
       "request": {
         "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
+          }
+        ],
         "url": {
           "raw": "{{payment_url}}/payments/{{payment_id}}/ledger",
           "host": [
@@ -191,6 +225,10 @@
           {
             "key": "Idempotency-Key",
             "value": "postman-refund-001"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
           }
         ],
         "url": {
@@ -215,6 +253,10 @@
           {
             "key": "Idempotency-Key",
             "value": "postman-refund-001"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "{{user_id}}"
           }
         ],
         "url": {

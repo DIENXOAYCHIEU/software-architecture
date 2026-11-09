@@ -18,7 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IEventPublisher, OutboxEventPublisher>();
         services.AddScoped<IAuditTrailWriter, AuditTrailWriter>();
         services.AddSingleton<PaymentMetrics>();
-        services.AddSingleton<IPaymentTokenProvider, InMemoryPaymentTokenProvider>();
+        services.AddScoped<IPaymentTokenProvider, DatabasePaymentTokenProvider>();
         services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
         services.AddSingleton(options);
         services.AddHostedService<PaymentRetryWorker>();
@@ -30,23 +30,16 @@ public static class DependencyInjection
         return services;
     }
 
-    public sealed class InMemoryPaymentTokenProvider : IPaymentTokenProvider
+    public sealed class DatabasePaymentTokenProvider : IPaymentTokenProvider
     {
-        private readonly Dictionary<Guid, string> tokens = [];
-        private readonly object gate = new();
-
         public Task StoreTokenAsync(Payment payment, string token, CancellationToken ct)
         {
-            lock (gate) tokens[payment.Id] = token;
+            payment.SetPaymentToken(token);
             return Task.CompletedTask;
         }
 
-        public Task<string?> GetTokenAsync(Payment payment, CancellationToken ct)
-        {
-            string? token;
-            lock (gate) tokens.TryGetValue(payment.Id, out token);
-            return Task.FromResult(token);
-        }
+        public Task<string?> GetTokenAsync(Payment payment, CancellationToken ct) =>
+            Task.FromResult(payment.PaymentToken);
     }
 
     /// <summary>Apply pending EF Core migrations for the payment database.</summary>

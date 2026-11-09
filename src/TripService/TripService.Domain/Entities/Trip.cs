@@ -73,8 +73,8 @@ public class Trip{
 	}
 
 	public void Cancel(){
-		if(Status == TripStatus.PAID || Status == TripStatus.CANCELLED)
-			throw new InvalidTripException("Không thể hủy chuyến ở trạng thái hiện tại");
+		if(Status == TripStatus.CANCELLED)
+			return;
 		Status = TripStatus.CANCELLED;
 		Updated = DateTime.UtcNow;
 	}

@@ -116,6 +116,27 @@ public sealed class PaymentCoreTests
     }
 
     [Fact]
+    public async Task CreateAsync_DifferentKeyCannotCreateSecondPaymentWhileFirstIsPending()
+    {
+        var repository = new InMemoryPaymentRepository();
+        var processor = new TestPaymentProcessor
+        {
+            Result = new GatewayResult(false, "temporarily unavailable", GatewayFailureKind.Transient)
+        };
+        var service = CreateService(repository, processor, maxAttempts: 1);
+        var request = CreateRequest();
+
+        await service.CreateAsync(request, "first-key", CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<PaymentException>(() =>
+            service.CreateAsync(request with { PaymentToken = "tok_second" },
+                "second-key", CancellationToken.None));
+
+        Assert.Equal(409, exception.StatusCode);
+        Assert.Single(repository.Payments);
+    }
+
+    [Fact]
     public async Task CreateAsync_PermanentGatewayFailureMarksPaymentFailedWithoutRetry()
     {
         var repository = new InMemoryPaymentRepository();
@@ -186,8 +207,11 @@ public sealed class PaymentCoreTests
         public Task<Payment?> GetByIdempotencyKeyAsync(string key, CancellationToken ct) =>
             Task.FromResult(payments.SingleOrDefault(x => x.IdempotencyKey == key));
 
-        public Task<bool> HasSucceededForTripAsync(Guid tripId, CancellationToken ct) =>
-            Task.FromResult(payments.Any(x => x.TripId == tripId && x.Status == PaymentStatus.Succeeded));
+        public Task<bool> HasActiveForTripAsync(Guid tripId, CancellationToken ct) =>
+            Task.FromResult(payments.Any(x => x.TripId == tripId &&
+                (x.Status == PaymentStatus.Pending || x.Status == PaymentStatus.Succeeded)));
+
+        public IReadOnlyCollection<Payment> Payments => payments;
 
         public Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct) =>
             Task.FromResult(payments.Where(x => x.TripId == tripId).ToList());

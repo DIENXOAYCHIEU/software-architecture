@@ -5,6 +5,7 @@ PaymentService xử lý thanh toán cho chuyến đi, sổ cái kế toán kép 
 ## Chức năng chính
 
 - Tạo giao dịch thanh toán với `Idempotency-Key`.
+- Kiểm tra quyền sở hữu payment qua `X-User-Id` do API Gateway chuyển tiếp.
 - Không tạo giao dịch thanh toán hoặc thực hiện charge gateway lần thứ hai khi nhận lại cùng một yêu cầu.
 - Trả về `409 Conflict` khi cùng một idempotency key nhưng nội dung payload khác nhau.
 - Theo dõi các trạng thái `Pending`, `Succeeded`, `Failed` và `Refunded`.
@@ -73,6 +74,7 @@ Response `200 OK`:
 POST /payments
 Content-Type: application/json
 Idempotency-Key: payment-001
+X-User-Id: 22222222-2222-2222-2222-222222222222
 X-Correlation-ID: optional-correlation-id
 ```
 
@@ -115,6 +117,7 @@ Response lần đầu `201 Created`:
 ```http
 POST /payments
 Idempotency-Key: payment-001
+X-User-Id: 22222222-2222-2222-2222-222222222222
 ```
 
 Gửi lại đúng payload với cùng một key sẽ trả về `200 OK` và cùng giá trị `id`. Hệ thống không tạo giao dịch mới và không thực hiện charge gateway lần thứ hai.
@@ -172,18 +175,18 @@ Response `200 OK`:
 [
   {
     "id": "44444444-4444-4444-4444-444444444444",
-    "account": "Cash",
+    "account": "rider:22222222-2222-2222-2222-222222222222",
     "debitAmount": 85000,
     "creditAmount": 0,
-    "type": "Payment",
+    "type": "Charge",
     "createdAt": "2026-10-22T08:00:01Z"
   },
   {
     "id": "55555555-5555-5555-5555-555555555555",
-    "account": "Revenue",
+    "account": "platform:revenue",
     "debitAmount": 0,
     "creditAmount": 85000,
-    "type": "Payment",
+    "type": "Charge",
     "createdAt": "2026-10-22T08:00:01Z"
   }
 ]
@@ -194,6 +197,7 @@ Response `200 OK`:
 ```http
 POST /payments/{id}/refund
 Idempotency-Key: refund-001
+X-User-Id: 22222222-2222-2222-2222-222222222222
 ```
 
 **Chức năng:** Hoàn tiền cho một payment có trạng thái `Succeeded` và phát ra sự kiện `PaymentRefunded`.
