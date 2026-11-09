@@ -1,0 +1,403 @@
+{
+  "info": {
+    "_postman_id": "e844bd61-229d-4e2a-b806-3c2d21d8e8c3",
+    "name": "TripService",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59017337",
+    "_collection_link": "https://go.postman.co/collection/59017337-e844bd61-229d-4e2a-b806-3c2d21d8e8c3?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Create Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"riderId\": \"11111111-1111-1111-1111-111111111111\",\r\n  \"startLocation\": {\r\n    \"latitude\": 10.7769,\r\n    \"longitude\": 106.7009,\r\n    \"address\": \"Quận 1, TP. Hồ Chí Minh\"\r\n  },\r\n  \"endLocation\": {\r\n    \"latitude\": 10.8231,\r\n    \"longitude\": 106.6297,\r\n    \"address\": \"Quận Tân Bình, TP. Hồ Chí Minh\"\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/Trip",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "Trip"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Create trip - 201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"riderId\": \"11111111-1111-1111-1111-111111111111\",\r\n  \"startLocation\": {\r\n    \"latitude\": 10.7769,\r\n    \"longitude\": 106.7009,\r\n    \"address\": \"Quận 1, TP. Hồ Chí Minh\"\r\n  },\r\n  \"endLocation\": {\r\n    \"latitude\": 10.8231,\r\n    \"longitude\": 106.6297,\r\n    \"address\": \"Quận Tân Bình, TP. Hồ Chí Minh\"\r\n  }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/Trip",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "Trip"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Sat, 17 Oct 2026 09:05:38 GMT"
+            },
+            {
+              "key": "server",
+              "value": "Kestrel"
+            },
+            {
+              "key": "location",
+              "value": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"b67f0897-b0c8-42e0-8e84-5d97a9585067\",\n  \"riderId\": \"11111111-1111-1111-1111-111111111111\",\n  \"status\": 0\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Trip",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "Trip",
+            "b67f0897-b0c8-42e0-8e84-5d97a9585067"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Get Trip - 200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "Trip",
+                "b67f0897-b0c8-42e0-8e84-5d97a9585067"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Sat, 17 Oct 2026 09:07:09 GMT"
+            },
+            {
+              "key": "server",
+              "value": "Kestrel"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"b67f0897-b0c8-42e0-8e84-5d97a9585067\",\n  \"riderId\": \"11111111-1111-1111-1111-111111111111\",\n  \"driverId\": null,\n  \"startLocation\": {\n    \"latitude\": 10.7769,\n    \"longitude\": 106.701,\n    \"address\": \"Quận 1, TP. Hồ Chí Minh\"\n  },\n  \"endLocation\": {\n    \"latitude\": 10.8231,\n    \"longitude\": 106.63,\n    \"address\": \"Quận Tân Bình, TP. Hồ Chí Minh\"\n  },\n  \"amountToPay\": null,\n  \"created\": \"2026-10-17T09:05:38.647854\",\n  \"updated\": \"2026-10-17T09:05:38.647854\",\n  \"status\": 0\n}"
+        }
+      ]
+    },
+    {
+      "name": "Assign Driver",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "\"22222222-2222-2222-2222-222222222222\"",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/driver-accept",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "Trip",
+            "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+            "driver-accept"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Assign Driver - 201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\"22222222-2222-2222-2222-222222222222\"",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/driver-accept",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "Trip",
+                "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+                "driver-accept"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Sat, 17 Oct 2026 09:09:13 GMT"
+            },
+            {
+              "key": "server",
+              "value": "Kestrel"
+            },
+            {
+              "key": "location",
+              "value": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"b67f0897-b0c8-42e0-8e84-5d97a9585067\",\n  \"driverId\": \"22222222-2222-2222-2222-222222222222\",\n  \"status\": 1\n}"
+        }
+      ]
+    },
+    {
+      "name": "Pickup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/pickup",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "Trip",
+            "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+            "pickup"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Pickup - 201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/pickup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "Trip",
+                "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+                "pickup"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Sat, 17 Oct 2026 09:10:37 GMT"
+            },
+            {
+              "key": "server",
+              "value": "Kestrel"
+            },
+            {
+              "key": "location",
+              "value": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"b67f0897-b0c8-42e0-8e84-5d97a9585067\",\n  \"driverId\": \"22222222-2222-2222-2222-222222222222\",\n  \"status\": 3\n}"
+        }
+      ]
+    },
+    {
+      "name": "Dropoff",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/dropoff",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "Trip",
+            "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+            "dropoff"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Dropoff - 201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067/dropoff",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "Trip",
+                "b67f0897-b0c8-42e0-8e84-5d97a9585067",
+                "dropoff"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "date",
+              "value": "Sat, 17 Oct 2026 09:11:22 GMT"
+            },
+            {
+              "key": "server",
+              "value": "Kestrel"
+            },
+            {
+              "key": "location",
+              "value": "http://localhost:5000/api/Trip/b67f0897-b0c8-42e0-8e84-5d97a9585067"
+            },
+            {
+              "key": "transfer-encoding",
+              "value": "chunked"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"b67f0897-b0c8-42e0-8e84-5d97a9585067\",\n  \"driverId\": \"22222222-2222-2222-2222-222222222222\",\n  \"status\": 4\n}"
+        }
+      ]
+    }
+  ]
+}

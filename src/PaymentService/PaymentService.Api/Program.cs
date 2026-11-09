@@ -1,0 +1,111 @@
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using PaymentService.Application;
+using PaymentService.Infrastructure;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+builder.Services.AddMetrics();
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddMeter(PaymentMetrics.MeterName)
+        .AddPrometheusExporter())
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddSource("SwiftRide.PaymentService"));
+builder.Services.AddHealthChecks();
+
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration.GetConnectionString("PaymentServiceDb")
+        ?? throw new InvalidOperationException("Connection string 'PaymentServiceDb' is required."),
+        builder.Configuration.GetSection("Reliability").Get<ReliabilityOptions>()
+        ?? new ReliabilityOptions(),
+        builder.Configuration.GetSection("RabbitMq").Get<RabbitMqOptions>()
+        ?? new RabbitMqOptions());
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+app.Services.InitializePaymentDatabase();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+app.MapPrometheusScrapingEndpoint("/metrics");
+
+app.Use(async (ctx, next) =>
+{
+    var correlationId = ctx.Request.Headers["X-Correlation-ID"].FirstOrDefault();
+    if (string.IsNullOrWhiteSpace(correlationId))
+        correlationId = Guid.NewGuid().ToString("N");
+
+    ctx.Response.Headers["X-Correlation-ID"] = correlationId;
+    var accessor = ctx.RequestServices.GetRequiredService<ICorrelationIdAccessor>();
+    accessor.Current = correlationId;
+    using var scope = app.Logger.BeginScope(new Dictionary<string, object>
+    {
+        ["CorrelationId"] = correlationId
+    });
+    await next();
+});
+
+// Middleware map lỗi nghiệp vụ -> HTTP status
+app.Use(async (ctx, next) =>
+{
+    try { await next(); }
+    catch (PaymentException ex)
+    {
+        ctx.Response.StatusCode = ex.StatusCode;
+        await ctx.Response.WriteAsJsonAsync(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        ctx.Response.StatusCode = 409;
+        await ctx.Response.WriteAsJsonAsync(new { error = ex.Message });
+    }
+});
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "payment" }));
+app.MapGet("/health/live", () => Results.Ok(new { status = "live", service = "payment" }));
+app.MapGet("/health/ready", async (PaymentDbContext db, CancellationToken ct) =>
+    await db.Database.CanConnectAsync(ct)
+        ? Results.Ok(new { status = "ready", service = "payment" })
+        : Results.StatusCode(StatusCodes.Status503ServiceUnavailable));
+
+var g = app.MapGroup("/payments").WithTags("Payments");
+
+// POST /payments — bắt buộc header Idempotency-Key
+g.MapPost("/", async ([FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+                      CreatePaymentRequest req, PaymentAppService svc, CancellationToken ct) =>
+{
+    var (payment, created) = await svc.CreateAsync(req, idempotencyKey, ct);
+    var body = PaymentResponse.From(payment);
+    return created ? Results.Created($"/payments/{payment.Id}", body) : Results.Ok(body);
+});
+
+g.MapGet("/{id:guid}", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
+    PaymentResponse.From(await svc.GetAsync(id, ct)));
+
+g.MapGet("/by-trip/{tripId:guid}", async (Guid tripId, PaymentAppService svc, CancellationToken ct) =>
+    (await svc.GetByTripAsync(tripId, ct)).Select(PaymentResponse.From));
+
+g.MapGet("/{id:guid}/ledger", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
+    await svc.GetLedgerAsync(id, ct));
+
+g.MapPost("/{id:guid}/refund", async (
+    Guid id,
+    [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+    PaymentAppService svc,
+    CancellationToken ct) =>
+    PaymentResponse.From(await svc.RefundAsync(id, idempotencyKey, ct)));
+
+app.Run();
