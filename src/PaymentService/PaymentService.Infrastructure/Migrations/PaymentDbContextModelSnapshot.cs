@@ -95,6 +95,10 @@ namespace PaymentService.Infrastructure.Migrations
                     b.Property<DateTime?>("NextRetryAtUtc")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("PaymentToken")
+                        .HasMaxLength(4000)
+                        .HasColumnType("varchar(4000)");
+
                     b.Property<string>("RefundIdempotencyKey")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
@@ -123,7 +127,8 @@ namespace PaymentService.Infrastructure.Migrations
                     b.HasIndex("IdempotencyKey")
                         .IsUnique();
 
-                    b.HasIndex("TripId");
+                    b.HasIndex("TripId")
+                        .IsUnique();
 
                     b.ToTable("payments", (string)null);
                 });

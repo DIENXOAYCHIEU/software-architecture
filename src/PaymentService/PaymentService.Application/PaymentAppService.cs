@@ -16,13 +16,19 @@ public class PaymentAppService(
 {
     /// <returns>(payment, created). created=false nghĩa là request lặp lại (idempotent replay).</returns>
     public async Task<(Payment Payment, bool Created)> CreateAsync(
-        CreatePaymentRequest req, string? idempotencyKey, CancellationToken ct)
+        CreatePaymentRequest req, string? idempotencyKey, CancellationToken ct,
+        string? userId = null)
     {
         // 1. Validate
         if (string.IsNullOrWhiteSpace(idempotencyKey))
             throw new PaymentException(400, "Thiếu header Idempotency-Key.");
         if (req.TripId == Guid.Empty || req.RiderId == Guid.Empty)
             throw new PaymentException(400, "TripId và RiderId là bắt buộc.");
+        var authenticatedRiderId = Guid.Empty;
+        if (userId is not null && !Guid.TryParse(userId, out authenticatedRiderId))
+            throw new PaymentException(401, "X-User-Id không hợp lệ.");
+        if (userId is not null && authenticatedRiderId != req.RiderId)
+            throw new PaymentException(403, "Bạn không có quyền thanh toán thay cho rider này.");
         if (req.Amount <= 0)
             throw new PaymentException(400, "Amount phải lớn hơn 0.");
         if (string.IsNullOrWhiteSpace(req.PaymentToken))
@@ -38,8 +44,8 @@ public class PaymentAppService(
         }
 
         // 3. Mỗi chuyến chỉ được thanh toán thành công một lần
-        if (await repo.HasSucceededForTripAsync(req.TripId, ct))
-            throw new PaymentException(409, "Chuyến đi này đã được thanh toán.");
+        if (await repo.HasActiveForTripAsync(req.TripId, ct))
+            throw new PaymentException(409, "Chuyến đi này đã có payment đang xử lý hoặc đã thanh toán.");
 
         // 4. Lưu giao dịch ở trạng thái Pending
         var payment = Payment.Create(req.TripId, req.RiderId, req.Amount,
@@ -47,8 +53,8 @@ public class PaymentAppService(
             req.Method, idempotencyKey, req.ComputeFingerprint());
         try
         {
-            await repo.AddAsync(payment, ct);
             await tokens.StoreTokenAsync(payment, req.PaymentToken, ct);
+            await repo.AddAsync(payment, ct);
         }
         catch (DuplicateIdempotencyKeyException)   // 2 request cùng key đến cùng lúc
         {
@@ -174,26 +180,41 @@ public class PaymentAppService(
         return TimeSpan.FromMilliseconds(capped + jitter);
     }
 
-    public async Task<Payment> GetAsync(Guid id, CancellationToken ct) =>
-        await repo.GetByIdAsync(id, ct) ?? throw new PaymentException(404, "Không tìm thấy giao dịch.");
-
-    public Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct) =>
-        repo.GetByTripAsync(tripId, ct);
-
-    public async Task<List<LedgerEntryResponse>> GetLedgerAsync(Guid paymentId, CancellationToken ct)
+    public async Task<Payment> GetAsync(Guid id, CancellationToken ct, string? userId = null)
     {
-        await GetAsync(paymentId, ct);
+        var payment = await repo.GetByIdAsync(id, ct)
+            ?? throw new PaymentException(404, "Không tìm thấy giao dịch.");
+        EnsureOwner(payment, userId);
+        return payment;
+    }
+
+    public async Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct, string? userId = null)
+    {
+        var payments = await repo.GetByTripAsync(tripId, ct);
+        if (userId is not null)
+        {
+            if (!Guid.TryParse(userId, out var riderId))
+                throw new PaymentException(401, "X-User-Id không hợp lệ.");
+            if (payments.Count == 0 || payments.Any(p => p.RiderId != riderId))
+                throw new PaymentException(403, "Bạn không có quyền xem payment của chuyến này.");
+        }
+        return payments;
+    }
+
+    public async Task<List<LedgerEntryResponse>> GetLedgerAsync(Guid paymentId, CancellationToken ct, string? userId = null)
+    {
+        await GetAsync(paymentId, ct, userId);
         var entries = await repo.GetLedgerAsync(paymentId, ct);
         return entries.Select(e => new LedgerEntryResponse(
             e.Id, e.Account, e.DebitAmount, e.CreditAmount, e.Type, e.CreatedAt)).ToList();
     }
 
-    public async Task<Payment> RefundAsync(Guid id, string? refundIdempotencyKey, CancellationToken ct)
+    public async Task<Payment> RefundAsync(Guid id, string? refundIdempotencyKey, CancellationToken ct, string? userId = null)
     {
         if (string.IsNullOrWhiteSpace(refundIdempotencyKey))
             throw new PaymentException(400, "Thiếu header Idempotency-Key cho refund.");
 
-        var payment = await GetAsync(id, ct);
+        var payment = await GetAsync(id, ct, userId);
         if (payment.Status == PaymentStatus.Refunded)
         {
             if (!string.Equals(payment.RefundIdempotencyKey, refundIdempotencyKey, StringComparison.Ordinal))
@@ -216,5 +237,14 @@ public class PaymentAppService(
         metrics?.PaymentRefunded();
         await repo.SaveChangesAsync(ct);
         return payment;
+    }
+
+    private static void EnsureOwner(Payment payment, string? userId)
+    {
+        if (userId is null) return;
+        if (!Guid.TryParse(userId, out var riderId))
+            throw new PaymentException(401, "X-User-Id không hợp lệ.");
+        if (payment.RiderId != riderId)
+            throw new PaymentException(403, "Bạn không có quyền truy cập payment này.");
     }
 }

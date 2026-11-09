@@ -85,27 +85,38 @@ var g = app.MapGroup("/payments").WithTags("Payments");
 
 // POST /payments — bắt buộc header Idempotency-Key
 g.MapPost("/", async ([FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+                      [FromHeader(Name = "X-User-Id")] string? userId,
                       CreatePaymentRequest req, PaymentAppService svc, CancellationToken ct) =>
 {
-    var (payment, created) = await svc.CreateAsync(req, idempotencyKey, ct);
+    var (payment, created) = await svc.CreateAsync(req, idempotencyKey, ct,
+        RequireUserId(userId));
     var body = PaymentResponse.From(payment);
     return created ? Results.Created($"/payments/{payment.Id}", body) : Results.Ok(body);
 });
 
-g.MapGet("/{id:guid}", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
-    PaymentResponse.From(await svc.GetAsync(id, ct)));
+g.MapGet("/{id:guid}", async (Guid id, [FromHeader(Name = "X-User-Id")] string? userId,
+    PaymentAppService svc, CancellationToken ct) =>
+    PaymentResponse.From(await svc.GetAsync(id, ct, RequireUserId(userId))));
 
-g.MapGet("/by-trip/{tripId:guid}", async (Guid tripId, PaymentAppService svc, CancellationToken ct) =>
-    (await svc.GetByTripAsync(tripId, ct)).Select(PaymentResponse.From));
+g.MapGet("/by-trip/{tripId:guid}", async (Guid tripId, [FromHeader(Name = "X-User-Id")] string? userId,
+    PaymentAppService svc, CancellationToken ct) =>
+    (await svc.GetByTripAsync(tripId, ct, RequireUserId(userId))).Select(PaymentResponse.From));
 
-g.MapGet("/{id:guid}/ledger", async (Guid id, PaymentAppService svc, CancellationToken ct) =>
-    await svc.GetLedgerAsync(id, ct));
+g.MapGet("/{id:guid}/ledger", async (Guid id, [FromHeader(Name = "X-User-Id")] string? userId,
+    PaymentAppService svc, CancellationToken ct) =>
+    await svc.GetLedgerAsync(id, ct, RequireUserId(userId)));
 
 g.MapPost("/{id:guid}/refund", async (
     Guid id,
     [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+    [FromHeader(Name = "X-User-Id")] string? userId,
     PaymentAppService svc,
     CancellationToken ct) =>
-    PaymentResponse.From(await svc.RefundAsync(id, idempotencyKey, ct)));
+    PaymentResponse.From(await svc.RefundAsync(id, idempotencyKey, ct, RequireUserId(userId))));
+
+static string RequireUserId(string? userId) =>
+    !string.IsNullOrWhiteSpace(userId)
+        ? userId
+        : throw new PaymentException(401, "Thiếu X-User-Id.");
 
 app.Run();
