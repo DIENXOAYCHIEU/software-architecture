@@ -28,8 +28,9 @@ public class PaymentDbContext(DbContextOptions<PaymentDbContext> options) : DbCo
             e.Property(x => x.AttemptCount);
             e.Property(x => x.NextRetryAtUtc);
             e.Property(x => x.FailureReason).HasMaxLength(500);
+            e.Property(x => x.PaymentToken).HasMaxLength(4000);
             e.HasIndex(x => x.IdempotencyKey).IsUnique();
-            e.HasIndex(x => x.TripId);
+            e.HasIndex(x => x.TripId).IsUnique();
             e.HasMany(x => x.LedgerEntries).WithOne().HasForeignKey(x => x.PaymentId);
         });
 

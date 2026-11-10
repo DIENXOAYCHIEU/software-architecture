@@ -39,12 +39,12 @@ TripService/
 
 ## 3. Database Configuration
 
-TripService sử dụng MySQL với database mặc định trong hướng dẫn này là `swiftride_trips`.
+TripService sử dụng MySQL với database mặc định trong hướng dẫn này là `swiftride_trip`.
 
 Tạo database bằng MySQL Workbench:
 
 ```sql
-CREATE DATABASE swiftride_trips
+CREATE DATABASE swiftride_trip
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 ```
@@ -56,7 +56,7 @@ Mở file `TripService.Api/appsettings.Development.json` và cấu hình:
 ```json
 {
   "ConnectionStrings": {
-    "TripServiceDb": "Server=localhost;Port=3306;Database=swiftride_trips;User=YOUR_MYSQL_USER;Password=YOUR_MYSQL_PASSWORD;"
+    "TripServiceDb": "Server=localhost;Port=3306;Database=swiftride_trip;User=YOUR_MYSQL_USER;Password=YOUR_MYSQL_PASSWORD;"
   }
 }
 ```

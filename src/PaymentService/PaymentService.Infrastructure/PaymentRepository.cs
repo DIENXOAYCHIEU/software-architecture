@@ -12,8 +12,9 @@ public class PaymentRepository(PaymentDbContext db) : IPaymentRepository
     public Task<Payment?> GetByIdempotencyKeyAsync(string key, CancellationToken ct) =>
         db.Payments.FirstOrDefaultAsync(p => p.IdempotencyKey == key, ct);
 
-    public Task<bool> HasSucceededForTripAsync(Guid tripId, CancellationToken ct) =>
-        db.Payments.AnyAsync(p => p.TripId == tripId && p.Status == PaymentStatus.Succeeded, ct);
+    public Task<bool> HasActiveForTripAsync(Guid tripId, CancellationToken ct) =>
+        db.Payments.AnyAsync(p => p.TripId == tripId &&
+            (p.Status == PaymentStatus.Pending || p.Status == PaymentStatus.Succeeded), ct);
 
     public Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct) =>
         db.Payments.AsNoTracking().Where(p => p.TripId == tripId)

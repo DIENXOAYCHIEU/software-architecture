@@ -45,8 +45,7 @@ public class DriverRepository : IDriverRepository
     public async Task UpdateAsync(
         Driver driver,
         CancellationToken cancellationToken = default)
-    {
+    { 
         _context.Drivers.Update(driver);
-
     }
 }

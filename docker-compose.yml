@@ -87,14 +87,21 @@ services:
     build:
       context: .
       dockerfile: src/MatchingService/MatchingService.Api/Dockerfile
+    container_name: matching_service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8083
       ConnectionStrings__MatchingServiceDb: ${MATCHING_DB_CONNECTION}
       OpenRouteService__ApiKey: ${OPENROUTESERVICE_API_KEY:-}
-    container_name: matching_service
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
     ports:
       - "8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     networks:
       - swiftride-network
 

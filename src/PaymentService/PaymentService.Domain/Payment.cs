@@ -22,6 +22,7 @@ public class Payment
     public string RequestFingerprint { get; private set; } = "";
     public string? RefundIdempotencyKey { get; private set; }
     public string? FailureReason { get; private set; }
+    public string? PaymentToken { get; private set; }
     public int AttemptCount { get; private set; }
     public DateTime? NextRetryAtUtc { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -89,6 +90,13 @@ public class Payment
         EnsureStatus(PaymentStatus.Pending);
         AttemptCount++;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPaymentToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentException("Payment token is required.", nameof(token));
+        PaymentToken = token;
     }
 
     public void Refund(string refundIdempotencyKey)

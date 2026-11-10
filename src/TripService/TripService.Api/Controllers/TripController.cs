@@ -73,4 +73,13 @@ public class TripController : ControllerBase{
 			result
 			);
 	}
+
+	[HttpPost("{tripId}/cancel")]
+	public async Task<IActionResult> CancelTrip(
+		[FromRoute] Guid tripId,
+		[FromBody] string reason
+		) {
+		var result = await _tripService.CancelTripAsync(tripId, reason);
+		return Ok(result);
+	}
 }

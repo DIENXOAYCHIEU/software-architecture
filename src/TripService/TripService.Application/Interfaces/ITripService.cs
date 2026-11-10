@@ -10,4 +10,5 @@ public interface ITripService{
     Task<AssignedTripResponse> UpdateStatusToDropped(Guid tripId);
     Task<AssignedTripResponse> UpdateStatusToPicked(Guid tripId);
     Task<AssignedTripResponse> UpdatePaymentStatusAsync(Guid tripId, bool paid);
+    Task<AssignedTripResponse> CancelTripAsync(Guid tripId, string reason);
 }

@@ -12,15 +12,18 @@ public class MatchingService : IMatchingService
     private readonly IMatchingRepository _matchingRepository;
     private readonly IDriverRepository _driverRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IIntegrationEventPublisher _eventPublisher;
 
     public MatchingService(
         IMatchingRepository matchingRepository,
         IDriverRepository driverRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IIntegrationEventPublisher eventPublisher)
     {
         _matchingRepository = matchingRepository;
         _driverRepository = driverRepository;
         _unitOfWork = unitOfWork;
+        _eventPublisher = eventPublisher;
     }
 
     public async Task<CreatedMatchingResponse> CreateAsync(
@@ -279,6 +282,8 @@ public class MatchingService : IMatchingService
             matching,
             cancellationToken);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return MapToResponse(matching);
     }
 
@@ -343,6 +348,79 @@ public class MatchingService : IMatchingService
             MatchedAt = entity.MatchedAt
         };
     }
+
+    // public async Task<MatchingResponse> AcceptDriverAsync(
+    //     Guid matchingId,
+    //     Guid driverId,
+    //     CancellationToken cancellationToken = default)
+    // {
+    //     var matching =
+    //         await GetEntityOrThrow(
+    //             matchingId,
+    //             cancellationToken);
+
+    //     var attempt =
+    //         await _matchingRepository.GetAttemptAsync(
+    //             matchingId,
+    //             driverId,
+    //             cancellationToken);
+
+    //     if (attempt == null)
+    //     {
+    //         throw new KeyNotFoundException(
+    //             "Active matching attempt was not found.");
+    //     }
+
+    //     if (matching.DriverId != driverId)
+    //     {
+    //         throw new InvalidOperationException(
+    //             "This driver is not the current offered driver.");
+    //     }
+
+    //     if (matching.Status == MatchingStatus.Matched)
+    //     {
+    //         throw new InvalidOperationException(
+    //             "Matching has already been completed.");
+    //     }
+
+    //     var driver =
+    //         await _driverRepository.GetByIdAsync(
+    //             driverId,
+    //             cancellationToken);
+
+    //     if (driver == null)
+    //     {
+    //         throw new KeyNotFoundException(
+    //             "Driver not found.");
+    //     }
+
+    //     if (driver.Status != DriverStatus.Available)
+    //     {
+    //         throw new InvalidOperationException(
+    //             "Driver is no longer available.");
+    //     }
+
+    //     attempt.Accept();
+
+    //     matching.AssignDriver(driverId);
+
+    //     driver.MarkBusy();
+
+    //     await _matchingRepository.UpdateAttemptAsync(
+    //         attempt,
+    //         cancellationToken);
+
+    //     await _driverRepository.UpdateAsync(
+    //         driver,
+    //         cancellationToken);
+
+    //     await _matchingRepository.UpdateAsync(
+    //         matching,
+    //         cancellationToken);
+
+    //     await _unitOfWork.SaveChangesAsync(cancellationToken);
+    //     return MapToResponse(matching);
+    // }
 
     public async Task<MatchingResponse> AcceptDriverAsync(
         Guid matchingId,
@@ -413,9 +491,15 @@ public class MatchingService : IMatchingService
             matching,
             cancellationToken);
 
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _eventPublisher.PublishDriverAssignedAsync(
+            matching.TripId,
+            driver.Id,
+            cancellationToken);
+
         return MapToResponse(matching);
     }
-
     public async Task<MatchingResponse> RejectDriverAsync(
         Guid matchingId,
         Guid driverId,
@@ -469,6 +553,7 @@ public class MatchingService : IMatchingService
 
             return MapToResponse(matching);
         }
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await FindAndOfferDriverAsync(
             matching,
