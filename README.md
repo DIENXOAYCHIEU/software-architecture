@@ -120,13 +120,19 @@ docker compose up --build -d
 ```bash
 docker compose up
 ```
+## TripService
+
+- [TripService README](./src/TripService/README.md)
+- [TripService Postman Collection](./src/TripService/Postman/TripService.postman_collection.json)
+
+## MatchingService
+
+- [MatchingService README](./src/MatchingService/README.md)
+- [MatchingService Postman Collection](./src/MatchingService/Postman/MatchingService.postman_collection.json)
+
 
 ## PaymentService
 
 - [PaymentService README](./src/PaymentService/README.md)
 - [PaymentService Postman Collection](./src/PaymentService/Postman/PaymentService.postman_collection.json)
 
-## TripService
-
-- [TripService README](./src/TripService/README.md)
-- [TripService Postman Collection](./src/TripService/Postman/TripService.postman_collection.json)
