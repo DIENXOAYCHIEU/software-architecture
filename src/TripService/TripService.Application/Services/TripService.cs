@@ -101,4 +101,16 @@ public class TripService : ITripService{
 		return new AssignedTripResponse(trip.Id, trip.DriverId, trip.Status);
 	}
 
+	public async Task<AssignedTripResponse> CancelTripAsync(Guid tripId, string reason){
+		var trip = await _tripRepository.GetByIdAsync(tripId)
+			?? throw new InvalidTripException("Chuyến đi không tồn tại");
+		trip.Cancel();
+		await _events.PublishAsync("TripCompensationRequested", new {
+			TripId = trip.Id,
+			Reason = reason
+		});
+		await _unitOfWork.SaveChangesAsync();
+		return new AssignedTripResponse(trip.Id, trip.DriverId, trip.Status);
+	}
+
 }

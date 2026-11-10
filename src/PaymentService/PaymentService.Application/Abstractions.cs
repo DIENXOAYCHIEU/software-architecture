@@ -55,7 +55,7 @@ public interface IPaymentRepository
 {
     Task<Payment?> GetByIdAsync(Guid id, CancellationToken ct);
     Task<Payment?> GetByIdempotencyKeyAsync(string key, CancellationToken ct);
-    Task<bool> HasSucceededForTripAsync(Guid tripId, CancellationToken ct);
+    Task<bool> HasActiveForTripAsync(Guid tripId, CancellationToken ct);
     Task<List<Payment>> GetByTripAsync(Guid tripId, CancellationToken ct);
     Task<List<LedgerEntry>> GetLedgerAsync(Guid paymentId, CancellationToken ct);
     Task<List<Payment>> GetPendingForRetryAsync(DateTime nowUtc, int limit, CancellationToken ct);
