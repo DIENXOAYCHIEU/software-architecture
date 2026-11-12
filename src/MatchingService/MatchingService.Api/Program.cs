@@ -1,6 +1,8 @@
-﻿using MatchingService.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using MatchingService.Application.Interfaces;
 using MatchingService.Application.Services;
 using MatchingService.Infrastructure;
+using MatchingService.Infrastructure.Persistence;
 using MatchingService.Application.Strategies;
 using MatchingService.Infrastructure.Integration;
 
@@ -45,5 +47,23 @@ if (builder.Configuration.GetValue<bool>("UseHttpsRedirection"))
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<MatchingDbContext>();
+        Console.WriteLine("--> [Docker] Đang quét file thiết kế và tạo bảng vào MySQL...");
+        await context.Database.MigrateAsync();
+        Console.WriteLine("--> [Docker] Đã tạo các bảng vào DB thành công!");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "--> [Docker LỖI] Không thể tạo bảng vào DB.");
+    }
+}
 
 app.Run();
