@@ -275,22 +275,26 @@ Nếu API chạy ở port khác, hãy thay port tương ứng. Khi chạy trực
 
 ## 8. API Endpoints
 
-MatchingService cung cấp các thao tác API liên quan đến tài xế và Matching. Tên route, HTTP method, request body và response cụ thể được khai báo trong các Controller.
+Base URL khi chạy Docker Compose là `http://localhost:8083`. Có thể import [Postman collection](./Postman/MatchingService.postman_collection.json) để gọi các API dưới đây; collection mặc định lưu ID trả về và nối các bước trong quy trình matching.
 
-Các nhóm chức năng cần kiểm thử:
-
-| Nhóm | Chức năng |
-|---|---|
-| Driver | Tạo/lấy thông tin tài xế và cập nhật vị trí hiện tại (theo các action được expose trong `DriverController`). |
-| Matching | Tạo MatchingRequest và lấy thông tin Matching theo ID. |
-| Matching | Bắt đầu tìm kiếm tài xế (`StartMatching`). |
-| Matching | Chấp nhận đề xuất tài xế (`AcceptDriver`). |
-
-> Mở Swagger tại `/swagger` để lấy chính xác route và schema theo Controller hiện tại. Không nên tự suy đoán route vì URL thực tế phụ thuộc vào `[Route]`, `[HttpGet]`, `[HttpPost]` và các attribute trong source code.
+| Nhóm | Method | Route | Mô tả |
+|---|---|---|---|
+| Driver | `POST` | `/api/drivers` | Tạo tài xế (mặc định `Available`). |
+| Driver | `GET` | `/api/drivers/{id}` | Lấy tài xế theo ID. |
+| Driver | `PATCH` | `/api/drivers/{id}/location` | Cập nhật vị trí tài xế. |
+| Driver | `PATCH` | `/api/drivers/{id}/status` | Cập nhật trạng thái; enum dạng số: `0` Offline, `1` Available, `2` Busy. |
+| Matching | `POST` | `/api/matching` | Tạo yêu cầu matching. |
+| Matching | `GET` | `/api/matching/{id}` | Lấy matching theo ID. |
+| Matching | `GET` | `/api/matching/trip/{tripId}` | Lấy matching theo Trip ID. |
+| Matching | `POST` | `/api/matching/{id}/search` | Tìm và đề xuất tài xế gần nhất đang Available. |
+| Matching | `POST` | `/api/matching/{id}/accept` | Chấp nhận tài xế đang được đề xuất. |
+| Matching | `POST` | `/api/matching/{id}/reject` | Từ chối tài xế đang được đề xuất và thử tài xế tiếp theo. |
+| Matching | `POST` | `/api/matching/{id}/cancel` | Hủy yêu cầu đang Pending hoặc Searching. |
+| Pricing | `POST` | `/api/matching/quote` | Tính báo giá theo tuyến đường. Cần cấu hình OpenRouteService API key. |
 
 ### 8.1. Kiểm thử Accept Driver
 
-Sau khi một MatchingRequest đã có tài xế được đề xuất, sử dụng API Accept tương ứng trong Swagger với:
+Sau khi đã tạo MatchingRequest và gọi `Start Matching`, dùng `Accept Offered Driver` trong Postman collection. Collection đọc `matchingId` và `offeredDriverId` từ response của các request trước. Nếu gọi API thủ công, cần truyền:
 
 - `matchingId`: ID của MatchingRequest.
 - `driverId`: ID tài xế đang được đề xuất trong MatchingRequest.

@@ -1,0 +1,470 @@
+{
+  "info": {
+    "_postman_id": "bd0bfbbc-615f-414d-959b-420e2c0f1d53",
+    "name": "SwiftRide - MatchingService",
+    "description": "HTTP collection for MatchingService. Run Create Driver, Create Matching, and Start Matching before Accept Driver or Reject Driver. The collection automatically stores driver, matching, trip, and offered-driver IDs. Pricing Quote requires a valid OpenRouteService API key in the service configuration.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Drivers",
+      "item": [
+        {
+          "name": "Create Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.driverId) {",
+                  "    pm.collectionVariables.set('driverId', data.driverId);",
+                  "}",
+                  "pm.test('Driver created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(data.driverId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Driver\",\n  \"latitude\": 10.7848,\n  \"longitude\": 106.6452\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/drivers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drivers"
+              ]
+            },
+            "description": "Creates an Available driver and saves the returned driverId as a collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Driver",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/drivers/{{driverId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drivers",
+                "{{driverId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Driver Location",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 10.7848,\n  \"longitude\": 106.6452\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/drivers/{{driverId}}/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drivers",
+                "{{driverId}}",
+                "location"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Driver Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/drivers/{{driverId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "drivers",
+                "{{driverId}}",
+                "status"
+              ]
+            },
+            "description": "DriverStatus numeric values: 0 = Offline, 1 = Available, 2 = Busy."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Matching",
+      "item": [
+        {
+          "name": "Create Matching",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('tripId', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.matchingId) {",
+                  "    pm.collectionVariables.set('matchingId', data.matchingId);",
+                  "}",
+                  "if (data.tripId) {",
+                  "    pm.collectionVariables.set('tripId', data.tripId);",
+                  "}",
+                  "pm.test('Matching request created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(data.matchingId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"{{tripId}}\",\n  \"pickupLatitude\": 10.7848,\n  \"pickupLongitude\": 106.6452\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matching",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching"
+              ]
+            },
+            "description": "Creates a matching request with a fresh TripId on every run."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Matching",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/{{matchingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "{{matchingId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Matching By Trip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/trip/{{tripId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "trip",
+                "{{tripId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Matching",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.driverId) {",
+                  "    pm.collectionVariables.set('offeredDriverId', data.driverId);",
+                  "}",
+                  "pm.test('Matching search started', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(data.matchingId).to.eql(pm.collectionVariables.get('matchingId'));",
+                  "});",
+                  "pm.test('A driver was offered', function () {",
+                  "    pm.expect(data.driverId, 'No available driver was offered').to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/{{matchingId}}/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "{{matchingId}}",
+                "search"
+              ]
+            },
+            "description": "Offers the trip to the nearest available driver and saves the returned driverId as offeredDriverId."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Offered Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"{{offeredDriverId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/{{matchingId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "{{matchingId}}",
+                "accept"
+              ]
+            },
+            "description": "Accepts the currently offered driver, changes the matching status to Matched, and publishes DriverAssigned."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Offered Driver",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.driverId) {",
+                  "    pm.collectionVariables.set('offeredDriverId', data.driverId);",
+                  "} else {",
+                  "    pm.collectionVariables.unset('offeredDriverId');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"{{offeredDriverId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/{{matchingId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "{{matchingId}}",
+                "reject"
+              ]
+            },
+            "description": "Rejects the current offer and, when possible, saves the next offered driverId for a subsequent accept/reject request."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Matching",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/{{matchingId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "{{matchingId}}",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Pricing Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLatitude\": 10.7848,\n  \"pickupLongitude\": 106.6452,\n  \"destinationLatitude\": 10.8231,\n  \"destinationLongitude\": 106.6297,\n  \"surgeMultiplier\": 1.0,\n  \"toll\": 0,\n  \"promotionMultiplier\": 1.0,\n  \"taxRate\": 0.1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/matching/quote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "matching",
+                "quote"
+              ]
+            },
+            "description": "Calculates a route and quote using OpenRouteService. Requires the service to be configured with a valid API key."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "driverId",
+      "value": ""
+    },
+    {
+      "key": "matchingId",
+      "value": ""
+    },
+    {
+      "key": "tripId",
+      "value": ""
+    },
+    {
+      "key": "offeredDriverId",
+      "value": ""
+    }
+  ]
+}
